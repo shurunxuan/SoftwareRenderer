@@ -8,30 +8,37 @@ using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
 
 Model model("head.obj");
+CDrawer* p_drawer = nullptr;
 
 VOID OnPaint(CDrawer& drawer)
 {
-	//int width = drawer.getWidth();
-	//int height = drawer.getHeight();
-	//for (int i = 0; i<model.nfaces(); i++) {
-	//	std::vector<int> face = model.face(i);
-	//	for (int j = 0; j<3; j++) {
-	//		Vec3f v0 = model.vert(face[j]);
-	//		Vec3f v1 = model.vert(face[(j + 1) % 3]);
-	//		int x0 = (-v0.x + 1.) * width / 2.;
-	//		int y0 = (-v0.y + 1.) * height / 2.;
-	//		int x1 = (-v1.x + 1.) * width / 2.;
-	//		int y1 = (-v1.y + 1.) * height / 2.;
-	//		drawer.drawLine(x0, y0, x1, y1, Color(255, 255, 255));
-	//	}
-	//}
+	int width = drawer.getWidth();
+	int height = drawer.getHeight();
 
-	Vec2i t0[3] = { Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80) };
-	Vec2i t1[3] = { Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180) };
-	Vec2i t2[3] = { Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180) };
-	drawer.drawTriangle(t0[0], t0[1], t0[2], Color(255, 0, 0));
-	drawer.drawTriangle(t1[0], t1[1], t1[2], Color(255, 255, 255));
-	drawer.drawTriangle(t2[0], t2[1], t2[2], Color(0, 255, 0));
+	for (int i = 0; i<model.nfaces(); i++) {
+		std::vector<int> face = model.face(i);
+		Vec3f pts[3];
+		Vec3f world_coords[3];
+		for (int i = 0; i < 3; i++)
+		{
+			Vec3f v = model.vert(face[i]);
+			world_coords[i] = v;
+			pts[i] = Vec3f(int((v.x + 1.) * width / 2. + 0.5), int((v.y + 1.) * height / 2. + 0.5), v.z);
+		}
+		Vec3f n = cross((world_coords[2] - world_coords[0]), (world_coords[1] - world_coords[0]));
+		Vec3f light_dir = { 0, 0, -1 };
+		light_dir.normalize();
+		n.normalize();
+		float intensity = n * light_dir;
+		drawer.fillTriangle(pts[0], pts[1], pts[2], Color(intensity * 255, intensity * 255, intensity * 255));
+	}
+
+	//Vec2i t0[3] = { Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80) };
+	//Vec2i t1[3] = { Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180) };
+	//Vec2i t2[3] = { Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180) };
+	//drawer.fillTriangle(t0[0], t0[1], t0[2], Color(255, 0, 0));
+	//drawer.drawTriangle(t1[0], t1[1], t1[2], Color(255, 255, 255));
+	//drawer.drawTriangle(t2[0], t2[1], t2[2], Color(0, 255, 0));
 
 	drawer.draw();
 }
@@ -94,10 +101,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// this struct holds Windows event messages
 	MSG msg;
 
-	PAINTSTRUCT  ps;
-	HDC hdc = BeginPaint(hWnd, &ps);
 
-	CDrawer drawer(hdc, hWnd);
+
+	CDrawer drawer(hWnd);
+	p_drawer = &drawer;
 
 	// Enter the infinite message loop
 	while (true)
@@ -111,7 +118,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			// send the message to the WindowProc function
 			DispatchMessage(&msg);
 
-			
+
 		}
 		// If the message is WM_QUIT, exit the while loop
 		if (msg.message == WM_QUIT)
@@ -120,7 +127,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		OnPaint(drawer);
 	}
 
-	EndPaint(hWnd, &ps);
+
 	GdiplusShutdown(gdiplusToken);
 	// return this part of the WM_QUIT message to Windows
 	return msg.wParam;
@@ -132,13 +139,19 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	// sort through and find what code to run for the message given
 	switch (message)
 	{
-		// this message is read when the window is closed
+	case WM_SIZE:
+	{
+		if (p_drawer != nullptr)
+			p_drawer->resizeBuffer();
+	}
+	break;
+	// this message is read when the window is closed
 	case WM_DESTROY:
 	{
 		// close the application entirely
 
 		// The program won't exit when close button is hit,
-		// so a bad fix is applied. If you know how to fix
+		// so an ugly fix is applied. If you know how to fix
 		// this, please give me a PR. Thanks.
 		exit(0);
 
