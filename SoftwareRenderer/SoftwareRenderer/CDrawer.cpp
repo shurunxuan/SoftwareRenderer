@@ -27,8 +27,8 @@ void CDrawer::init()
 	zbuffer = new float[width * height];
 	for (int i = width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
 
-	vertex_buffer = new Color*[width];
-	for (int i = 0; i < width; ++i) vertex_buffer[i] = new Color[height];
+	zbuffer_color = new Color*[width];
+	for (int i = 0; i < width; ++i) zbuffer_color[i] = new Color[height];
 
 	buffer = new Bitmap(width, height);
 	gr = new Graphics(buffer);
@@ -40,8 +40,8 @@ void CDrawer::deinit()
 	delete buffer;
 	delete zbuffer;
 	delete graphics;
-	for (int i = 0; i < width; ++i) delete vertex_buffer[i];
-	delete vertex_buffer;
+	for (int i = 0; i < width; ++i) delete zbuffer_color[i];
+	delete zbuffer_color;
 	EndPaint(hwnd_, &ps);
 }
 
@@ -82,7 +82,7 @@ long CDrawer::getHeight() const
 
 void CDrawer::drawPixel(int x, int y, Color color)
 {
-	vertex_buffer[x][y] = color;
+	zbuffer_color[x][y] = color;
 }
 
 void CDrawer::drawLine(int x0, int y0, int x1, int y1, Color color)
@@ -176,8 +176,8 @@ void CDrawer::draw()
 	for (int i = 0; i < width; ++i)
 		for (int j = 0; j < height; ++j)
 		{
-			buffer->SetPixel(i, getHeight() - j, vertex_buffer[i][j]);
-			vertex_buffer[i][j] = Color(0, 0, 0);
+			buffer->SetPixel(i, getHeight() - j, zbuffer_color[i][j]);
+			zbuffer_color[i][j] = Color(0, 0, 0);
 		}
 
 	graphics->DrawImage(buffer, 0, 0);

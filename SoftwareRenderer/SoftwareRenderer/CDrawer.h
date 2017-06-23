@@ -33,7 +33,7 @@ private:
 	HDC hdc_;
 	HWND hwnd_;
 	PAINTSTRUCT ps;
-	Color** vertex_buffer = nullptr;
+	Color** zbuffer_color = nullptr;
 	Bitmap* buffer = nullptr;
 	float* zbuffer = nullptr;
 	Graphics* gr = nullptr;

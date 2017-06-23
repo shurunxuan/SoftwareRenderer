@@ -19,23 +19,27 @@ VOID OnPaint(CDrawer& drawer)
 		std::vector<int> face = model.face(i);
 		Vec3f pts[3];
 		Vec3f world_coords[3];
-		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
 		{
-			Vec3f v = model.vert(face[i]);
-			world_coords[i] = v;
+			Vec3f v = model.vert(face[j]);
+			world_coords[j] = v;
 			int c = 4;
 			v.x = v.x / (1 - v.z / c);
 			v.y = v.y / (1 - v.z / c);
 			v.z = v.z / (1 - v.z / c);
-			pts[i] = Vec3f(int((v.x + 1.) * width / 2. + 0.5), int((v.y + 1.) * height / 2. + 0.5), v.z);
+			pts[j] = Vec3f(int((v.x + 1.) * width / 2. + 0.5), int((v.y + 1.) * height / 2. + 0.5), v.z);
 		}
 		Vec3f n = cross((world_coords[2] - world_coords[0]), (world_coords[1] - world_coords[0]));
-		Vec3f light_dir = { 0, 0, -1 };
+		Vec3f light_dir = { -1, -1, -1 };
 		light_dir.normalize();
 		n.normalize();
 		float intensity = n * light_dir;
-		if (intensity < 0) continue;
-		drawer.fillTriangle(pts[0], pts[1], pts[2], Color(intensity * 127, intensity * 127, intensity * 127));
+		Vec3f cam_dir = { 0, 0, -1 };
+		cam_dir.normalize();
+		if (n * cam_dir < 0) continue;
+		if (intensity < 0) intensity = 0;
+		if (intensity > 1) intensity = 1;
+		drawer.fillTriangle(pts[0], pts[1], pts[2], Color(intensity * 255, intensity * 255, intensity * 255));
 	}
 
 	//Vec2i t0[3] = { Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80) };
