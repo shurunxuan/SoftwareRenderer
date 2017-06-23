@@ -30,7 +30,6 @@ public:
 		Color color;
 	};
 private:
-	std::queue<pixel_param> DrawQueue;
 	HDC hdc_;
 	HWND hwnd_;
 	PAINTSTRUCT ps;
@@ -41,41 +40,15 @@ private:
 	Graphics* graphics = nullptr;
 	long width;
 	long height;
+
+	void init();
+
+	void deinit();
 public:
-	CDrawer(HWND hwnd) 
-		: hwnd_(hwnd)
-	{
-		
-		hdc_ = BeginPaint(hwnd_, &ps);
-		graphics = new Graphics(hdc_);
-		RECT rect;
-		GetClientRect(hwnd_, &rect);
-		width = rect.right - rect.left;
-		height = rect.bottom - rect.top;
+	CDrawer(HWND hwnd);
+	~CDrawer();
 
-		zbuffer = new float[width * height];
-		for (int i = width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
-
-		vertex_buffer = new Color*[width];
-		for (int i = 0; i < width; ++i) vertex_buffer[i] = new Color[height];
-
-		buffer = new Bitmap(width, height);
-		gr = new Graphics(buffer);
-	}
-
-	~CDrawer()
-	{
-		delete gr;
-		delete buffer;
-		delete zbuffer;
-		delete graphics;
-		for (int i = 0; i < width; ++i) delete vertex_buffer[i];
-		delete vertex_buffer;
-		EndPaint(hwnd_, &ps);
-	}
-
-	void resizeBuffer();
-	
+	void resizeBuffer();	
 
 	long getWidth() const;
 	long getHeight() const;

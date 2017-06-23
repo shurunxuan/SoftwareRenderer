@@ -23,6 +23,10 @@ VOID OnPaint(CDrawer& drawer)
 		{
 			Vec3f v = model.vert(face[i]);
 			world_coords[i] = v;
+			int c = 4;
+			v.x = v.x / (1 - v.z / c);
+			v.y = v.y / (1 - v.z / c);
+			v.z = v.z / (1 - v.z / c);
 			pts[i] = Vec3f(int((v.x + 1.) * width / 2. + 0.5), int((v.y + 1.) * height / 2. + 0.5), v.z);
 		}
 		Vec3f n = cross((world_coords[2] - world_coords[0]), (world_coords[1] - world_coords[0]));
@@ -30,7 +34,8 @@ VOID OnPaint(CDrawer& drawer)
 		light_dir.normalize();
 		n.normalize();
 		float intensity = n * light_dir;
-		drawer.fillTriangle(pts[0], pts[1], pts[2], Color(intensity * 255, intensity * 255, intensity * 255));
+		if (intensity < 0) continue;
+		drawer.fillTriangle(pts[0], pts[1], pts[2], Color(intensity * 127, intensity * 127, intensity * 127));
 	}
 
 	//Vec2i t0[3] = { Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80) };
@@ -86,8 +91,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		WS_OVERLAPPEDWINDOW,    // window style
 		CW_USEDEFAULT,    // x-position of the window
 		CW_USEDEFAULT,    // y-position of the window
-		CW_USEDEFAULT,    // width of the window
-		CW_USEDEFAULT,    // height of the window
+		800,    // width of the window
+		800,    // height of the window
 		nullptr,    // we have no parent window, NULL
 		nullptr,    // we aren't using menus, NULL
 		hInstance,    // application handle

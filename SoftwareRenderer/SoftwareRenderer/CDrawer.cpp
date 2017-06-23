@@ -15,18 +15,8 @@ Vec3f barycentric(Vec3f A, Vec3f B, Vec3f C, Vec3f P) {
 	return Vec3f(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
 }
 
-void CDrawer::resizeBuffer()
+void CDrawer::init()
 {
-	if (gr == nullptr || buffer == nullptr || graphics == nullptr || zbuffer == nullptr) return;
-
-	delete gr;
-	delete buffer;
-	delete zbuffer;
-	delete graphics;
-	for (int i = 0; i < width; ++i) delete vertex_buffer[i];
-	delete vertex_buffer;
-	EndPaint(hwnd_, &ps);
-
 	hdc_ = BeginPaint(hwnd_, &ps);
 	graphics = new Graphics(hdc_);
 	RECT rect;
@@ -42,6 +32,36 @@ void CDrawer::resizeBuffer()
 
 	buffer = new Bitmap(width, height);
 	gr = new Graphics(buffer);
+}
+
+void CDrawer::deinit()
+{
+	delete gr;
+	delete buffer;
+	delete zbuffer;
+	delete graphics;
+	for (int i = 0; i < width; ++i) delete vertex_buffer[i];
+	delete vertex_buffer;
+	EndPaint(hwnd_, &ps);
+}
+
+CDrawer::CDrawer(HWND hwnd)
+	: hwnd_(hwnd)
+{
+	init();
+}
+
+CDrawer::~CDrawer()
+{
+	deinit();
+}
+
+void CDrawer::resizeBuffer()
+{
+	if (gr == nullptr || buffer == nullptr || graphics == nullptr || zbuffer == nullptr) return;
+
+	deinit();
+	init();
 }
 
 long CDrawer::getWidth() const
@@ -153,23 +173,12 @@ void CDrawer::draw()
 	gr->FillRectangle(&brush, 0, 0, width, height);
 	for (int i = width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
 
-	while (!DrawQueue.empty())
-	{
-		pixel_param pp = DrawQueue.front();
-		DrawQueue.pop();
-
-		buffer->SetPixel(pp.x, getHeight() - pp.y, pp.color);
-	}
-
 	for (int i = 0; i < width; ++i)
 		for (int j = 0; j < height; ++j)
 		{
 			buffer->SetPixel(i, getHeight() - j, vertex_buffer[i][j]);
 			vertex_buffer[i][j] = Color(0, 0, 0);
 		}
-
-
-
 
 	graphics->DrawImage(buffer, 0, 0);
 }
