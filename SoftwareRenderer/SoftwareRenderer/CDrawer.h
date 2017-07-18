@@ -48,7 +48,7 @@ public:
 	CDrawer(HWND hwnd);
 	~CDrawer();
 
-	void resizeBuffer();	
+	void resizeBuffer();
 
 	long getWidth() const;
 	long getHeight() const;
@@ -59,9 +59,11 @@ public:
 	void drawLine(Vec2i v0, Vec2i v1, Color color);
 
 	void drawTriangle(Vec2i v0, Vec2i v1, Vec2i v2, Color color);
-
+	
 	void fillTriangle(Vec3f v0, Vec3f v1, Vec3f v2, Color color);
-	void CDrawer::fillTriangle(Vec3f* pts, Color color);
+	void fillTriangle(Vec3f* coords, Color color);
+	void fillTriangle(Vec3f* coords, Vec3f* nor, Color color);
+	void fillTriangle(Vec3f* coords, Vec3f* nor, Color color, bool shading);
 
 	void draw();
 };

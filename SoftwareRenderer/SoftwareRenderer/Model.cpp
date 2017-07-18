@@ -17,19 +17,19 @@ Model::Model(const char *filename) : verts_(), faces_(), norms_(), uv_(), diffus
 		if (!line.compare(0, 2, "v ")) {
 			iss >> trash;
 			Vec3f v;
-			for (int i = 0; i<3; i++) iss >> v[i];
+			for (int i = 0; i < 3; i++) iss >> v[i];
 			verts_.push_back(v);
 		}
 		else if (!line.compare(0, 3, "vn ")) {
 			iss >> trash >> trash;
 			Vec3f n;
-			for (int i = 0; i<3; i++) iss >> n[i];
+			for (int i = 0; i < 3; i++) iss >> n[i];
 			norms_.push_back(n);
 		}
 		else if (!line.compare(0, 3, "vt ")) {
 			iss >> trash >> trash;
 			Vec2f uv;
-			for (int i = 0; i<2; i++) iss >> uv[i];
+			for (int i = 0; i < 2; i++) iss >> uv[i];
 			uv_.push_back(uv);
 		}
 		else if (!line.compare(0, 2, "f ")) {
@@ -37,7 +37,7 @@ Model::Model(const char *filename) : verts_(), faces_(), norms_(), uv_(), diffus
 			Vec3i tmp;
 			iss >> trash;
 			while (iss >> tmp[0] >> trash >> tmp[1] >> trash >> tmp[2]) {
-				for (int i = 0; i<3; i++) tmp[i]--; // in wavefront obj all indices start at 1, not zero
+				for (int i = 0; i < 3; i++) tmp[i]--; // in wavefront obj all indices start at 1, not zero
 				f.push_back(tmp);
 			}
 			faces_.push_back(f);
@@ -60,7 +60,7 @@ int Model::nfaces() {
 
 std::vector<int> Model::face(int idx) {
 	std::vector<int> face;
-	for (int i = 0; i<(int)faces_[idx].size(); i++) face.push_back(faces_[idx][i][0]);
+	for (int i = 0; i < (int)faces_[idx].size(); i++) face.push_back(faces_[idx][i][0]);
 	return face;
 }
 

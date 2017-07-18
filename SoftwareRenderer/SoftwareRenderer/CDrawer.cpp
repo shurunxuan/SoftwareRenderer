@@ -10,7 +10,7 @@ Vec3f barycentric(Vec3f A, Vec3f B, Vec3f C, Vec3f P) {
 		s[i][2] = A[i] - P[i];
 	}
 	Vec3f u = cross(s[0], s[1]);
-	if (std::abs(u[2])>1e-2) // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
+	if (std::abs(u[2]) > 1e-2) // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
 		return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 	return Vec3f(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
 }
@@ -135,13 +135,80 @@ void CDrawer::drawTriangle(Vec2i v0, Vec2i v1, Vec2i v2, Color color)
 	drawLine(v2, v0, color);
 }
 
-void CDrawer::fillTriangle(Vec3f* pts, Color color)
+void CDrawer::fillTriangle(Vec3f* coords, Color color)
 {
+	fillTriangle(coords, nullptr, color, false);
+}
+
+void CDrawer::fillTriangle(Vec3f* coords, Vec3f* nor, Color color)
+{
+	fillTriangle(coords, nor, color, true);
+}
+
+void CDrawer::fillTriangle(Vec3f* coords, Vec3f* nor, Color color, bool shading)
+{
+	// Backface culling
+	Vec3f n = cross((coords[2] - coords[0]), (coords[1] - coords[0]));
+	n.normalize();
+	Vec3f cam_dir = { 0, 0, -1 };
+	cam_dir.normalize();
+	if (n * cam_dir < 0) return;
+
+
+	// Lighting 
+	Vec3f light_dir = { -1, -1, -1 };
+	light_dir.normalize();
+
+	float intensity = n * light_dir;
+	if (intensity < 0) intensity = 0;
+	if (intensity > 1) intensity = 1;
+	Color flat_color = Color(color.GetR() * intensity, color.GetG() * intensity, color.GetB() * intensity);
+
+	// Color of pts
+	Color pts_color[3];
+	// Affine transformed coords
+	Vec3f pts[3];
+	// Affine transformation
+	for (int j = 0; j < 3; j++)
+	{
+		Vec3f v = coords[j];
+		Vec4f v_homo;
+		v_homo[0] = v[0];
+		v_homo[1] = v[1];
+		v_homo[2] = v[2];
+		v_homo[3] = 1;
+		// Temporary camera matrix
+		int c = 4;
+		mat<4, 4, float> cam_m;
+		cam_m[0][0] = 1;
+		cam_m[1][1] = 1;
+		cam_m[2][2] = 1;
+		cam_m[3][3] = 1;
+		cam_m[3][2] = -1.0f / c;
+
+		v_homo = cam_m * v_homo;
+
+		v.x = v_homo[0] / v_homo[3];
+		v.y = v_homo[1] / v_homo[3];
+		v.z = v_homo[2] / v_homo[3];
+		pts[j] = Vec3f(int((v.x + 1.) * width / 2. + 0.5), int((v.y + 1.) * height / 2. + 0.5), v.z);
+
+		if (shading)
+		{
+			Vec3f pts_norm = nor[j].normalize();
+			float intensity = -1 * (pts_norm * light_dir);
+			if (intensity < 0) intensity = 0;
+			if (intensity > 1) intensity = 1;
+			pts_color[j] = Color(color.GetR() * intensity, color.GetG() * intensity, color.GetB() * intensity);
+		}
+	}
+
+
 	Vec2f bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 	Vec2f bboxmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
 	Vec2f clamp(getWidth() - 1, getHeight() - 1);
-	for (int i = 0; i<3; i++) {
-		for (int j = 0; j<2; j++) {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 2; j++) {
 			bboxmin[j] = std::max(0.f, std::min(bboxmin[j], pts[i][j]));
 			bboxmax[j] = std::min(clamp[j], std::max(bboxmax[j], pts[i][j]));
 		}
@@ -150,16 +217,26 @@ void CDrawer::fillTriangle(Vec3f* pts, Color color)
 	for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
 		for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
 			Vec3f bc_screen = barycentric(pts[0], pts[1], pts[2], P);
-			if (bc_screen.x<0 || bc_screen.y<0 || bc_screen.z<0) continue;
+			if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
 			P.z = 0;
-			for (int i = 0; i<3; i++) P.z += pts[i][2] * bc_screen[i];
-			if (zbuffer[int(P.x + P.y*width)]<P.z) {
+			Color pixel_color = Color(0, 0, 0);
+			if (!shading) pixel_color = flat_color;
+			for (int i = 0; i < 3; i++)
+			{
+				P.z += pts[i][2] * bc_screen[i];
+				if (shading)
+				pixel_color = Color(pts_color[i].GetR() * bc_screen[i] + pixel_color.GetR(),
+					pts_color[i].GetG() * bc_screen[i] + pixel_color.GetG(),
+					pts_color[i].GetB() * bc_screen[i] + pixel_color.GetB());
+			}
+			if (zbuffer[int(P.x + P.y*width)] < P.z) {
 				zbuffer[int(P.x + P.y*width)] = P.z;
-				drawPixel(P.x, P.y, color);
+				drawPixel(P.x, P.y, pixel_color);
 			}
 		}
 	}
 }
+
 
 void CDrawer::fillTriangle(Vec3f v0, Vec3f v1, Vec3f v2, Color color)
 {
