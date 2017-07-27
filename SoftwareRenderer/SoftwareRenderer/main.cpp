@@ -2,41 +2,16 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <gdiplus.h>
-#include "Model.h"
 #include "CRenderer.h"
 using namespace Gdiplus;
 using namespace Eigen;
 #pragma comment (lib,"Gdiplus.lib")
 
-Model model("head.obj");
+
 CRenderer* p_renderer = nullptr;
 
 VOID OnPaint(CRenderer& renderer)
 {
-	int width = renderer.getWidth();
-	int height = renderer.getHeight();
-
-	renderer.cameraLookAt(Vector3f(0, 0, -4), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
-
-	for (int i = 0; i<model.nfaces(); i++) {
-		std::vector<int> face = model.face(i);
-		Vector3f world_coords[3];
-		Vector3f norm[3];
-		for (int j = 0; j < 3; j++)
-		{
-			world_coords[j] = model.vert(face[j]);
-			norm[j] = model.norm(i, j);
-		}
-
-		renderer.fillTriangle(world_coords, norm, Color(255, 255, 255), false);
-	}
-
-	//Vector2i t0[3] = { Vector2i(10, 70),   Vector2i(50, 160),  Vector2i(70, 80) };
-	//Vector2i t1[3] = { Vector2i(180, 50),  Vector2i(150, 1),   Vector2i(70, 180) };
-	//Vector2i t2[3] = { Vector2i(180, 150), Vector2i(120, 160), Vector2i(130, 180) };
-	//renderer.fillTriangle(t0[0], t0[1], t0[2], Color(255, 0, 0));
-	//renderer.drawTriangle(t1[0], t1[1], t1[2], Color(255, 255, 255));
-	//renderer.drawTriangle(t2[0], t2[1], t2[2], Color(0, 255, 0));
 
 	renderer.draw();
 }
