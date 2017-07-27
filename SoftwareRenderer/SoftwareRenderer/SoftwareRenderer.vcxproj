@@ -111,14 +111,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CDrawer.cpp" />
-    <ClCompile Include="geometry.cpp" />
+    <ClCompile Include="CCamera.cpp" />
+    <ClCompile Include="CRenderer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CDrawer.h" />
-    <ClInclude Include="geometry.h" />
+    <ClInclude Include="CCamera.h" />
+    <ClInclude Include="CRenderer.h" />
     <ClInclude Include="Model.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -4,27 +4,27 @@
 #include <vector>
 #include <windows.h>
 #include <gdiplus.h>
-#include "geometry.h"
+#include "Eigen/Dense"
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
 
 class Model {
 private:
-	std::vector<Vec3f> verts_;
-	std::vector<std::vector<Vec3i> > faces_; // attention, this Vec3i means vertex/uv/normal
-	std::vector<Vec3f> norms_;
-	std::vector<Vec2f> uv_;
+	std::vector<Eigen::Vector3f> verts_;
+	std::vector<std::vector<Eigen::Vector3i> > faces_; // attention, this Eigen::Vector3i means vertex/uv/normal
+	std::vector<Eigen::Vector3f> norms_;
+	std::vector<Eigen::Vector2f> uv_;
 	Color** diffusemap_;
 	//void load_texture(std::string filename, const char *suffix, TGAImage &img);
 public:
 	Model(const char *filename);
 	~Model();
-	int nverts();
-	int nfaces();
-	Vec3f norm(int iface, int nvert);
-	Vec3f vert(int i);
-	Vec2i uv(int iface, int nvert);
-	Color diffuse(Vec2i uv);
+	int nverts() const;
+	int nfaces() const;
+	Eigen::Vector3f norm(int iface, int nvert);
+	Eigen::Vector3f vert(int i);
+	Eigen::Vector2i uv(int iface, int nvert);
+	Color diffuse(Eigen::Vector2i uv) const;
 	std::vector<int> face(int idx);
 };
 

@@ -3,39 +3,42 @@
 #include <windowsx.h>
 #include <gdiplus.h>
 #include "Model.h"
-#include "CDrawer.h"
+#include "CRenderer.h"
 using namespace Gdiplus;
+using namespace Eigen;
 #pragma comment (lib,"Gdiplus.lib")
 
 Model model("head.obj");
-CDrawer* p_drawer = nullptr;
+CRenderer* p_renderer = nullptr;
 
-VOID OnPaint(CDrawer& drawer)
+VOID OnPaint(CRenderer& renderer)
 {
-	int width = drawer.getWidth();
-	int height = drawer.getHeight();
+	int width = renderer.getWidth();
+	int height = renderer.getHeight();
+
+	renderer.cameraLookAt(Vector3f(0, 0, -4), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
 
 	for (int i = 0; i<model.nfaces(); i++) {
 		std::vector<int> face = model.face(i);
-		Vec3f world_coords[3];
-		Vec3f norm[3];
+		Vector3f world_coords[3];
+		Vector3f norm[3];
 		for (int j = 0; j < 3; j++)
 		{
 			world_coords[j] = model.vert(face[j]);
 			norm[j] = model.norm(i, j);
 		}
 
-		drawer.fillTriangle(world_coords, norm, Color(255, 255, 255));
+		renderer.fillTriangle(world_coords, norm, Color(255, 255, 255), false);
 	}
 
-	//Vec2i t0[3] = { Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80) };
-	//Vec2i t1[3] = { Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180) };
-	//Vec2i t2[3] = { Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180) };
-	//drawer.fillTriangle(t0[0], t0[1], t0[2], Color(255, 0, 0));
-	//drawer.drawTriangle(t1[0], t1[1], t1[2], Color(255, 255, 255));
-	//drawer.drawTriangle(t2[0], t2[1], t2[2], Color(0, 255, 0));
+	//Vector2i t0[3] = { Vector2i(10, 70),   Vector2i(50, 160),  Vector2i(70, 80) };
+	//Vector2i t1[3] = { Vector2i(180, 50),  Vector2i(150, 1),   Vector2i(70, 180) };
+	//Vector2i t2[3] = { Vector2i(180, 150), Vector2i(120, 160), Vector2i(130, 180) };
+	//renderer.fillTriangle(t0[0], t0[1], t0[2], Color(255, 0, 0));
+	//renderer.drawTriangle(t1[0], t1[1], t1[2], Color(255, 255, 255));
+	//renderer.drawTriangle(t2[0], t2[1], t2[2], Color(0, 255, 0));
 
-	drawer.draw();
+	renderer.draw();
 }
 
 // the WindowProc function prototype
@@ -98,8 +101,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 
 
-	CDrawer drawer(hWnd);
-	p_drawer = &drawer;
+	CRenderer renderer(hWnd);
+	p_renderer = &renderer;
 
 	// Enter the infinite message loop
 	while (true)
@@ -119,7 +122,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		if (msg.message == WM_QUIT)
 			break;
 
-		OnPaint(drawer);
+		OnPaint(renderer);
 	}
 
 
@@ -136,8 +139,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	{
 	case WM_SIZE:
 	{
-		if (p_drawer != nullptr)
-			p_drawer->resizeBuffer();
+		if (p_renderer != nullptr)
+			p_renderer->resizeBuffer();
 	}
 	break;
 	// this message is read when the window is closed
