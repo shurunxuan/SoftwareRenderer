@@ -112,10 +112,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CRenderer.cpp" />
+    <ClCompile Include="CVertex.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="CPixel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CPixel.h" />
     <ClInclude Include="CRenderer.h" />
+    <ClInclude Include="CVertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

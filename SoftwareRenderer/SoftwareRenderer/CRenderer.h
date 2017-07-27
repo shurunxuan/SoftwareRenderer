@@ -2,7 +2,7 @@
 
 #include <windows.h>
 #include <gdiplus.h>
-#include "Eigen/Dense"
+#include "CPixel.h"
 
 #undef max
 #undef min
@@ -35,6 +35,16 @@ public:
 	long getWidth() const;
 	long getHeight() const;
 
-	void draw();
+	// 2D
+	void drawPixel(CPixel pixel) const;
+	void drawLine(CPixel p1, CPixel p2) const;
+	void drawLine(CPixel* pts) const;
+	void drawTriangle(CPixel p1, CPixel p2, CPixel p3) const;
+	void drawTriangle(CPixel* pts) const;
+	void fillTriangle(CPixel p1, CPixel p2, CPixel p3) const;
+	void fillTriangle(CPixel* pts) const;
+
+	void clear() const;
+	void draw() const;
 
 };
