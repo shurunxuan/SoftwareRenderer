@@ -70,7 +70,7 @@ void CRenderer::draw()
 	for (int i = 0; i < width; ++i)
 		for (int j = 0; j < height; ++j)
 		{
-			buffer->SetPixel(i, height - j, Gdiplus::Color(rand() % 256, rand() % 256, rand() % 256));
+			buffer->SetPixel(i, height - j, Gdiplus::Color(0, 0, 0));
 		}
 
 	graphics->DrawImage(buffer, 0, 0);

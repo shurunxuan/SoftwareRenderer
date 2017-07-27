@@ -1,19 +1,18 @@
 // include the basic windows header file
+#include <time.h>
 #include <windows.h>
 #include <windowsx.h>
 #include <gdiplus.h>
 #include "CRenderer.h"
-using namespace Gdiplus;
-using namespace Eigen;
+#pragma comment (lib, "Winmm.lib")
 #pragma comment (lib,"Gdiplus.lib")
-
 
 CRenderer* p_renderer = nullptr;
 
-VOID OnPaint(CRenderer& renderer)
+VOID paint_main(CRenderer& renderer)
 {
 
-	renderer.draw();
+	
 }
 
 // the WindowProc function prototype
@@ -31,7 +30,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// this struct holds information for the window class
 	WNDCLASSEX wc;
 
-	GdiplusStartupInput gdiplusStartupInput;
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR           gdiplusToken;
 
 	// Initialize GDI+.
@@ -78,7 +77,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	CRenderer renderer(hWnd);
 	p_renderer = &renderer;
-
+	TCHAR title[100];
 	// Enter the infinite message loop
 	while (true)
 	{
@@ -96,12 +95,17 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		// If the message is WM_QUIT, exit the while loop
 		if (msg.message == WM_QUIT)
 			break;
-
-		OnPaint(renderer);
+		DWORD start = timeGetTime();
+		paint_main(renderer);
+		renderer.draw();
+		DWORD end = timeGetTime();
+		double fps = 1000.0 / (end - start);
+		wsprintf(title, TEXT("FPS: %d.%d%d, Resolution: %d x %d"), int(fps), int(fps * 10) % 10, int(fps * 100) % 10, renderer.getWidth(), renderer.getHeight());
+		SetWindowText(hWnd, title);
 	}
 
 
-	GdiplusShutdown(gdiplusToken);
+	Gdiplus::GdiplusShutdown(gdiplusToken);
 	// return this part of the WM_QUIT message to Windows
 	return msg.wParam;
 }
