@@ -4,36 +4,50 @@
 #include <windowsx.h>
 #include <gdiplus.h>
 #include "CRenderer.h"
+#include "CModel.h"
 #pragma comment (lib, "Winmm.lib")
 #pragma comment (lib, "Gdiplus.lib")
 
 CRenderer* p_renderer = nullptr;
+CModel model("0.obj");
 
 VOID paint_main(CRenderer& renderer)
 {
-	CPixel p1(400, 400, Gdiplus::Color(255, 255, 255));
+	//CPixel p1(400, 400, Gdiplus::Color(255, 255, 255));
 
-	CPixel p2(600, 500, Gdiplus::Color(255, 0, 0));
-	CPixel p3(500, 600, Gdiplus::Color(0, 255, 0));
+	//CPixel p2(600, 500, Gdiplus::Color(255, 0, 0));
+	//CPixel p3(500, 600, Gdiplus::Color(0, 255, 0));
 
-	CPixel p4(200, 500, Gdiplus::Color(0, 0, 255));
-	CPixel p5(300, 600, Gdiplus::Color(255, 255, 0));
+	//CPixel p4(200, 500, Gdiplus::Color(0, 0, 255));
+	//CPixel p5(300, 600, Gdiplus::Color(255, 255, 0));
 
-	CPixel p6(200, 300, Gdiplus::Color(255, 0, 255));
-	CPixel p7(300, 200, Gdiplus::Color(0, 255, 255));
+	//CPixel p6(200, 300, Gdiplus::Color(255, 0, 255));
+	//CPixel p7(300, 200, Gdiplus::Color(0, 255, 255));
 
-	CPixel p8(600, 300, Gdiplus::Color(128, 255, 0));
-	CPixel p9(500, 200, Gdiplus::Color(0, 128, 255));
+	//CPixel p8(600, 300, Gdiplus::Color(128, 255, 0));
+	//CPixel p9(500, 200, Gdiplus::Color(0, 128, 255));
 
-	renderer.fillTriangle(p1, p2, p3);
+	//renderer.fillTriangle(p1, p2, p3);
 
-	renderer.fillTriangle(p1, p4, p5);
+	//renderer.fillTriangle(p1, p4, p5);
 
-	renderer.drawLine(p1, p6);
-	renderer.drawLine(p1, p7);
-	
-	renderer.drawLine(p1, p8);
-	renderer.drawLine(p1, p9);
+	//renderer.drawLine(p1, p6);
+	//renderer.drawLine(p1, p7);
+	//
+	//renderer.drawLine(p1, p8);
+	//renderer.drawLine(p1, p9);
+
+	for (CModel::TFace face : model.faces)
+	{
+		std::vector<CPixel> pixels(3);
+		for (int i = 0; i < 3; ++i)
+		{
+			pixels[i].x() = int(face[i].v(0) * 2.5) + 400;
+			pixels[i].y() = int(-face[i].v(1) * 2.5) + 600;
+		}
+		renderer.drawTriangle(&*pixels.begin());
+	}
+
 }
 
 // the WindowProc function prototype
