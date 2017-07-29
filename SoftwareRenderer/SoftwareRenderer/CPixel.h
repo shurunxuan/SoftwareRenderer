@@ -5,7 +5,7 @@
 
 class CPixel
 {
-private:
+public:
 	Eigen::Vector2i p;
 	Gdiplus::Color c;
 public:

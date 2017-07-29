@@ -9,7 +9,7 @@
 #pragma comment (lib, "Gdiplus.lib")
 
 CRenderer* p_renderer = nullptr;
-CModel model("0.obj");
+CModel model("m003.obj");
 
 VOID paint_main(CRenderer& renderer)
 {
@@ -36,16 +36,16 @@ VOID paint_main(CRenderer& renderer)
 	//
 	//renderer.drawLine(p1, p8);
 	//renderer.drawLine(p1, p9);
-
+	Eigen::Vector3f light = { 0, 0, 1 };
 	for (CModel::TFace face : model.faces)
 	{
-		std::vector<CPixel> pixels(3);
 		for (int i = 0; i < 3; ++i)
 		{
-			pixels[i].x() = int(face[i].v(0) * 2.5) + 400;
-			pixels[i].y() = int(-face[i].v(1) * 2.5) + 600;
+			float intensity = face[i].n.dot(light);
+			intensity = intensity > 1.0f ? 1.0f : intensity < 0.0f ? 0.0f : intensity;
+			face[i].c = Gdiplus::Color(255 * intensity, 255 * intensity, 255 * intensity);
 		}
-		renderer.drawTriangle(&*pixels.begin());
+		renderer.fillTriangle(&*face.begin());
 	}
 
 }

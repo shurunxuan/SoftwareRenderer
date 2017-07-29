@@ -123,6 +123,9 @@
     <ClInclude Include="CRenderer.h" />
     <ClInclude Include="CVertex.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
