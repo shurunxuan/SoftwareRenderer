@@ -9,7 +9,7 @@
 #pragma comment (lib, "Gdiplus.lib")
 
 CRenderer* p_renderer = nullptr;
-CModel* p_model;
+CModel* p_model = nullptr;
 
 VOID paint_main(CRenderer& renderer)
 {
@@ -72,7 +72,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// Initialize GDI+.
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
-	CModel model("m003.obj", "m0030.mtl");
+	CModel model("m003.obj", "m0031.mtl");
 	p_model = &model;
 
 	// clear out the window class for use

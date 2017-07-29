@@ -37,7 +37,7 @@ Gdiplus::Color getColorFromBitmap(float x, float y, Gdiplus::Bitmap* pBitmap)
 {
 	Gdiplus::Color color;
 	float x_ = (x - int(x)) * pBitmap->GetWidth();
-	float y_ = pBitmap->GetHeight() - (y - int(y)) * pBitmap->GetHeight();
+	float y_ = (1.0f - (y - int(y))) * pBitmap->GetHeight();
 	pBitmap->GetPixel(int(x_), int(y_), &color);
 	return color;
 }
