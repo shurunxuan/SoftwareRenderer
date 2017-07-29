@@ -4,6 +4,7 @@
 #include <gdiplus.h>
 #include "CPixel.h"
 #include "CVertex.h"
+#include "CModel.h"
 
 #undef max
 #undef min
@@ -50,6 +51,7 @@ public:
 	// 3D
 	void fillTriangle(CVertex v1, CVertex v2, CVertex v3) const;
 	void fillTriangle(CVertex* vtxs) const;
+	void fillTriangle(CModel::TFace face) const;
 
 	void clear() const;
 	void draw() const;

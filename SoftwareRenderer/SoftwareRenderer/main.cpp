@@ -9,7 +9,7 @@
 #pragma comment (lib, "Gdiplus.lib")
 
 CRenderer* p_renderer = nullptr;
-CModel model("m003.obj");
+CModel* p_model;
 
 VOID paint_main(CRenderer& renderer)
 {
@@ -37,15 +37,16 @@ VOID paint_main(CRenderer& renderer)
 	//renderer.drawLine(p1, p8);
 	//renderer.drawLine(p1, p9);
 	Eigen::Vector3f light = { 0, 0, 1 };
-	for (CModel::TFace face : model.faces)
+	for (CModel::TFace face : p_model->faces)
 	{
 		for (int i = 0; i < 3; ++i)
 		{
-			float intensity = face[i].n.dot(light);
+			float intensity = face[i].vertex.n.dot(light);
 			intensity = intensity > 1.0f ? 1.0f : intensity < 0.0f ? 0.0f : intensity;
-			face[i].c = Gdiplus::Color(255 * intensity, 255 * intensity, 255 * intensity);
+			face[i].vertex.c = Gdiplus::Color(255 * intensity, 255 * intensity, 255 * intensity);
 		}
-		renderer.fillTriangle(&*face.begin());
+		renderer.fillTriangle(face);
+		//renderer.fillTriangle(face[0].vertex, face[1].vertex, face[2].vertex);
 	}
 
 }
@@ -70,6 +71,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	// Initialize GDI+.
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+
+	CModel model("m003.obj", "m0030.mtl");
+	p_model = &model;
 
 	// clear out the window class for use
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));

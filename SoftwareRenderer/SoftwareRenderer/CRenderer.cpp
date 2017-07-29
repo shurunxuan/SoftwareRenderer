@@ -27,10 +27,19 @@
 //}
 
 Eigen::Vector3f barycentric(CPixel p1, CPixel p2, CPixel p3, int x, int y) {
-	
+
 	Eigen::Vector3f u = Eigen::Vector3f(p3.x() - p1.x(), p2.x() - p1.x(), p1.x() - x).cross(Eigen::Vector3f(p3.y() - p1.y(), p2.y() - p1.y(), p1.y() - y));
-	if (std::abs(u[2])<1) return Eigen::Vector3f(-1, 1, 1); // triangle is degenerate, in this case return smth with negative coordinates 
+	if (std::abs(u(2)) < 1) return Eigen::Vector3f(-1, 1, 1); // triangle is degenerate, in this case return smth with negative coordinates 
 	return Eigen::Vector3f(1.f - (u(0) + u(1)) / u(2), u(1) / u(2), u(0) / u(2));
+}
+
+Gdiplus::Color getColorFromBitmap(float x, float y, Gdiplus::Bitmap* pBitmap)
+{
+	Gdiplus::Color color;
+	float x_ = (x - int(x)) * pBitmap->GetWidth();
+	float y_ = pBitmap->GetHeight() - (y - int(y)) * pBitmap->GetHeight();
+	pBitmap->GetPixel(int(x_), int(y_), &color);
+	return color;
 }
 
 void CRenderer::init()
@@ -237,6 +246,38 @@ void CRenderer::fillTriangle(CVertex v1, CVertex v2, CVertex v3) const
 void CRenderer::fillTriangle(CVertex* vtxs) const
 {
 	fillTriangle(vtxs[0], vtxs[1], vtxs[2]);
+}
+
+void CRenderer::fillTriangle(CModel::TFace face) const
+{
+	CVertex v1(face[0].vertex);
+	CVertex v2(face[1].vertex);
+	CVertex v3(face[2].vertex);
+	if ((v1.v - v2.v).cross(v2.v - v3.v).dot(Eigen::Vector3f(0, 0, 1)) < 0) return;
+	const auto scale = 2.5f;
+	CPixel p1(rint(v1.v(0) * scale) + 400, rint(v1.v(1) * scale) + 100, v1.c);
+	CPixel p2(rint(v2.v(0) * scale) + 400, rint(v2.v(1) * scale) + 100, v2.c);
+	CPixel p3(rint(v3.v(0) * scale) + 400, rint(v3.v(1) * scale) + 100, v3.c);
+
+	int minX = std::min(p1.x(), std::min(p2.x(), p3.x()));
+	int maxX = std::max(p1.x(), std::max(p2.x(), p3.x()));
+	int minY = std::min(p1.y(), std::min(p2.y(), p3.y()));
+	int maxY = std::max(p1.y(), std::max(p2.y(), p3.y()));
+
+	for (int x = minX; x <= maxX; ++x)
+		for (int y = minY; y <= maxY; ++y)
+		{
+			Eigen::Vector3f b = barycentric(p1, p2, p3, x, y);
+			if (b(0) < 0 || b(1) < 0 || b(2) < 0) continue;
+			float R = p1.color().GetR() * b(0) + p2.color().GetR() * b(1) + p3.color().GetR() * b(2);
+			float G = p1.color().GetG() * b(0) + p2.color().GetG() * b(1) + p3.color().GetG() * b(2);
+			float B = p1.color().GetB() * b(0) + p2.color().GetB() * b(1) + p3.color().GetB() * b(2);
+			float z = v1.v(2) * b(0) + v2.v(2) * b(1) + v3.v(2) * b(2);
+			Eigen::Vector2f texture = v1.t * b(0) + v2.t * b(1) + v3.t * b(2);
+			Gdiplus::Color t_color = getColorFromBitmap(texture(0), texture(1), face[0].material.texture);
+			Gdiplus::Color pixel_color(R / 255.0f * t_color.GetR(), G / 255.0f * t_color.GetG(), B / 255.0f * t_color.GetB());
+			drawPixel(CPixel(x, y, pixel_color), -z);
+		}
 }
 
 void CRenderer::clear() const

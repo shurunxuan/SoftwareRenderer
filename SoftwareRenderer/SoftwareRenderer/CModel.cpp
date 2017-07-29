@@ -1,5 +1,9 @@
 #include <fstream>
+#include <map>
+#include <locale>
+#include <codecvt>
 #include "CModel.h"
+#pragma comment (lib, "Gdiplus.lib")
 
 std::vector<std::string> split(std::string str, char ch)
 {
@@ -28,10 +32,81 @@ T str2num(std::string str, T& num)
 }
 
 
-CModel::CModel(std::string obj_file)
+CModel::SFace::SFace(CVertex v, SMtl m)
+	:vertex(v), material(m)
+{ }
+
+CModel::CModel(std::string obj_file, std::string mtl_file)
 {
+	std::map<std::string, SMtl> mtl_map;
+	if (mtl_file != "")
+	{
+		std::ifstream fin(mtl_file);
+		std::string line;
+		SMtl* current_mtl = nullptr;
+		while (getline(fin, line))
+		{
+			auto s = split(line, ' ');
+			std::string first_token(s[0]);
+			if (first_token == "newmtl")
+			{
+				SMtl newmtl;
+				newmtl.name = s[1];
+				mtl_map[s[1]] = newmtl;
+				current_mtl = &mtl_map[s[1]];
+			}
+			else if (first_token == "Kd")
+			{
+				float r, g, b;
+				str2num(s[1], r);
+				str2num(s[2], g);
+				str2num(s[3], b);
+				current_mtl->diffuse = Eigen::Vector3f(r, g, b);
+			}
+			else if (first_token == "Ka")
+			{
+				float r, g, b;
+				str2num(s[1], r);
+				str2num(s[2], g);
+				str2num(s[3], b);
+				current_mtl->ambient = Eigen::Vector3f(r, g, b);
+			}
+			else if (first_token == "Ks")
+			{
+				float r, g, b;
+				str2num(s[1], r);
+				str2num(s[2], g);
+				str2num(s[3], b);
+				current_mtl->specular = Eigen::Vector3f(r, g, b);
+			}
+			else if (first_token == "Ke")
+			{
+				float r, g, b;
+				str2num(s[1], r);
+				str2num(s[2], g);
+				str2num(s[3], b);
+				current_mtl->emission = Eigen::Vector3f(r, g, b);
+			}
+			else if (first_token == "Ns")
+			{
+				str2num(s[1], current_mtl->shininess);
+			}
+			else if (first_token == "map_Kd")
+			{
+				// string -> wstring
+				std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> cv;
+				std::wstring name = cv.from_bytes(s[1]);
+				current_mtl->texture = Gdiplus::Bitmap::FromFile(name.c_str());
+			}
+			else
+			{
+
+			}
+		}
+	}
 	std::ifstream fin(obj_file);
 	std::string line;
+	std::string current_mtl = "";
 	while (getline(fin, line))
 	{
 		auto s = split(line, ' ');
@@ -73,11 +148,22 @@ CModel::CModel(std::string obj_file)
 				str2num(p_detail[2], index);
 				Eigen::Vector2f t_f(texture[index - 1]);
 				CVertex vertex(v_f, n_f, t_f);
-				face.push_back(vertex);
+				if (mtl_file != "")
+				{
+					SFace this_face(vertex, mtl_map[current_mtl]);
+					face.push_back(this_face);
+				}
+				else
+				{
+					SFace this_face(vertex, SMtl());
+					face.push_back(this_face);
+				}
 			}
 			faces.push_back(face);
 		}
-		else
-		{		}
+		else if (first_token == "usemtl" && mtl_file != "")
+		{
+			current_mtl = s[1];
+		}
 	}
 }
