@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <fstream>
 #include "CRenderer.h"
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
@@ -88,6 +89,8 @@ void CRenderer::resizeBuffer()
 
 	deinit();
 	init();
+
+	resetPerspectiveCamera();
 }
 
 long CRenderer::getWidth() const
@@ -256,19 +259,30 @@ void CRenderer::fillTriangle(CVertex* vtxs) const
 	fillTriangle(vtxs[0], vtxs[1], vtxs[2]);
 }
 
-void CRenderer::fillTriangle(CModel::TFace face) const
+void CRenderer::fillTriangle(CModel::TFace face)
 {
-	CVertex v1(face[0].vertex);
-	CVertex v2(face[1].vertex);
-	CVertex v3(face[2].vertex);
-	// Backface culling
-	if ((v1.v - v2.v).cross(v2.v - v3.v).dot(Eigen::Vector3f(0, 0, 1)) < 0) return;
-
 	// View transformation
-	const auto scale = 2.5f;
-	CPixel p1(rint(v1.v(0) * scale) + 400, rint(v1.v(1) * scale) + 100, v1.c);
-	CPixel p2(rint(v2.v(0) * scale) + 400, rint(v2.v(1) * scale) + 100, v2.c);
-	CPixel p3(rint(v3.v(0) * scale) + 400, rint(v3.v(1) * scale) + 100, v3.c);
+	CVertex v1(trans(face[0].vertex));
+	CVertex v2(trans(face[1].vertex));
+	CVertex v3(trans(face[2].vertex));
+
+	// Backface culling
+	if ((v1.v - v2.v).cross(v2.v - v3.v)(2) < 0) return;
+
+	// Just clip all the triangle if one vertex is outside the viewport
+	if (v1.v(0) > width || v1.v(0) < 0) return;
+	if (v2.v(0) > width || v2.v(0) < 0) return;
+	if (v3.v(0) > width || v3.v(0) < 0) return;
+	if (v1.v(1) > height || v1.v(1) < 0) return;
+	if (v2.v(1) > height || v2.v(1) < 0) return;
+	if (v3.v(1) > height || v3.v(1) < 0) return;
+	//const auto scale = 2.5f;
+	//CPixel p1(rint(v1.v(0) * scale) + 400, rint(v1.v(1) * scale) + 100, v1.c);
+	//CPixel p2(rint(v2.v(0) * scale) + 400, rint(v2.v(1) * scale) + 100, v2.c);
+	//CPixel p3(rint(v3.v(0) * scale) + 400, rint(v3.v(1) * scale) + 100, v3.c);
+	CPixel p1(rint(v1.v(0)), rint(v1.v(1)), v1.c);
+	CPixel p2(rint(v2.v(0)), rint(v2.v(1)), v2.c);
+	CPixel p3(rint(v3.v(0)), rint(v3.v(1)), v3.c);
 
 	// Find bounding box
 	int minX = std::min(p1.x(), std::min(p2.x(), p3.x()));
@@ -297,6 +311,82 @@ void CRenderer::fillTriangle(CModel::TFace face) const
 		}
 }
 
+void CRenderer::setPerspectiveCamera(float near, float far, float fov)
+{
+	camera.n = near;
+	camera.f = far;
+	camera.theta = fov;
+	resetPerspectiveCamera();
+}
+
+void CRenderer::cameraLookat(Eigen::Vector3f e, Eigen::Vector3f g, Eigen::Vector3f t)
+{
+	camera.e = e;
+	camera.g = g;
+	camera.w = -g / abs(g.norm());
+	auto temp = t.cross(camera.w);
+	camera.u = temp / abs(temp.norm());
+	camera.v = camera.w.cross(camera.u);
+}
+
+void CRenderer::resetPerspectiveCamera()
+{
+	camera.t = tanf(camera.theta / 2.0f) * abs(camera.n);
+	camera.r = float(width) / float(height) * camera.t;
+	camera.l = -camera.r;
+	camera.b = -camera.t;
+}
+
+Eigen::Matrix4f CRenderer::viewport()
+{
+	Eigen::Matrix4f Mvp(Eigen::Matrix4f::Zero());
+	Mvp(0, 0) = width / 2.0f;
+	Mvp(1, 1) = height / 2.0f;
+	Mvp(2, 2) = Mvp(3, 3) = 1.0f;
+	Mvp(0, 3) = (width - 1) / 2.0f;
+	Mvp(1, 3) = (height - 1) / 2.0f;
+	return Mvp;
+}
+
+Eigen::Matrix4f CRenderer::orthographic()
+{
+	Eigen::Matrix4f Morth(Eigen::Matrix4f::Zero());
+	Morth(0, 0) = 2.0f / (camera.r - camera.l);
+	Morth(1, 1) = 2.0f / (camera.t - camera.b);
+	Morth(2, 2) = 2.0f / (camera.n - camera.f);
+	Morth(3, 3) = 1.0f;
+	Morth(0, 3) = -(camera.r + camera.l) * (camera.r - camera.l);
+	Morth(1, 3) = -(camera.t + camera.b) * (camera.t - camera.b);
+	Morth(2, 3) = -(camera.n + camera.f) * (camera.n - camera.f);
+	return Morth;
+}
+
+Eigen::Matrix4f CRenderer::P()
+{
+	Eigen::Matrix4f p(Eigen::Matrix4f::Zero());
+	p(0, 0) = p(1, 1) = camera.n;
+	p(2, 2) = camera.n + camera.f;
+	p(2, 3) = -camera.f * camera.n;
+	p(3, 2) = 1.0f;
+	return p;
+}
+
+
+Eigen::Matrix4f CRenderer::cameraTrans()
+{
+	Eigen::Matrix4f Mcam(Eigen::Matrix4f::Zero());
+	Mcam(0, 0) = camera.u(0); Mcam(0, 1) = camera.u(1); Mcam(0, 2) = camera.u(2);
+	Mcam(1, 0) = camera.v(0); Mcam(1, 1) = camera.v(1); Mcam(1, 2) = camera.v(2);
+	Mcam(2, 0) = camera.w(0); Mcam(2, 1) = camera.w(1); Mcam(2, 2) = camera.w(2);
+	Mcam(3, 3) = 1.0f;
+	Eigen::Matrix4f Mcam2(Eigen::Matrix4f::Identity());
+	Mcam2(0, 3) = -camera.e(0);
+	Mcam2(1, 3) = -camera.e(1);
+	Mcam2(2, 3) = -camera.e(2);
+	return Mcam * Mcam2;
+}
+
+
 void CRenderer::clear() const
 {
 	Gdiplus::SolidBrush brush(Gdiplus::Color(0, 0, 0));
@@ -310,4 +400,31 @@ void CRenderer::clear() const
 void CRenderer::draw() const
 {
 	graphics->DrawImage(buffer, 0, 0);
+}
+
+CVertex CRenderer::trans(CVertex v)
+{
+	auto v_ = viewport();
+	auto o = orthographic();
+	auto p = P();
+	auto c = cameraTrans();
+	auto M = v_ * o * p * c;
+	auto M_it = M.inverse().transpose();
+
+	Eigen::Vector4f v_homo(v.v(0), v.v(1), v.v(2), 1.0f);
+	Eigen::Vector4f n_homo(v.n(0), v.n(1), v.n(2), 0.0f);
+
+
+	Eigen::Vector4f rv_homo = M * v_homo;
+	Eigen::Vector4f rn_homo = M_it * n_homo;
+
+	Eigen::Vector3f rv(rv_homo(0) / rv_homo(3), rv_homo(1) / rv_homo(3), rv_homo(2) / rv_homo(3));
+	Eigen::Vector3f rn(rn_homo(0), rn_homo(1), rn_homo(2));
+
+	CVertex result(rv, rn.normalized(), v.t, v.c);
+	//std::ofstream fout("log.txt");
+	//fout << result << std::endl << std::endl;
+	//fout << v << std::endl;
+	//fout.close();
+	return result;
 }

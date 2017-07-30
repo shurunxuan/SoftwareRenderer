@@ -10,9 +10,19 @@
 
 CRenderer* p_renderer = nullptr;
 CModel* p_model = nullptr;
+float p_v = 0.0f;
+bool dir = false;
+int rotate = 0;
 VOID paint_main(CRenderer& renderer)
 {
-	Eigen::Vector3f light = { 0, 0, 1 };
+	if (dir) p_v += 10.0f;
+	else p_v -= 10.0f;
+	if (p_v > 100.0f || p_v < 0.0f) dir = !dir;
+	float r_rotate = 3.14159f / 180.f * rotate;
+	rotate = (rotate + 10) % 360;
+	Eigen::Vector3f light = { cosf(r_rotate), 0, sinf(r_rotate) };
+	//renderer.cameraLookat(Eigen::Vector3f(0, p_v + 50, 400), Eigen::Vector3f(0, 0, -1), Eigen::Vector3f(0, 1, 0));
+	renderer.cameraLookat(Eigen::Vector3f(0, p_v + 50, 0) + 400 * light, Eigen::Vector3f(-cosf(r_rotate), 0, -sinf(r_rotate)), Eigen::Vector3f(0, 1, 0));
 	light.normalize();
 	for (CModel::TFace face : p_model->faces)
 	{
@@ -94,6 +104,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	CRenderer renderer(hWnd);
 	p_renderer = &renderer;
+	renderer.setPerspectiveCamera(-1.f, -2.f, 3.14159f / 3.0f);
+
 	TCHAR title[100];
 	// Enter the infinite message loop
 	while (true)
