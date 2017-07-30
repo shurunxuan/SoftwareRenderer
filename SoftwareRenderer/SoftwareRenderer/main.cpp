@@ -10,39 +10,17 @@
 
 CRenderer* p_renderer = nullptr;
 CModel* p_model = nullptr;
-
 VOID paint_main(CRenderer& renderer)
 {
-	//CPixel p1(400, 400, Gdiplus::Color(255, 255, 255));
-
-	//CPixel p2(600, 500, Gdiplus::Color(255, 0, 0));
-	//CPixel p3(500, 600, Gdiplus::Color(0, 255, 0));
-
-	//CPixel p4(200, 500, Gdiplus::Color(0, 0, 255));
-	//CPixel p5(300, 600, Gdiplus::Color(255, 255, 0));
-
-	//CPixel p6(200, 300, Gdiplus::Color(255, 0, 255));
-	//CPixel p7(300, 200, Gdiplus::Color(0, 255, 255));
-
-	//CPixel p8(600, 300, Gdiplus::Color(128, 255, 0));
-	//CPixel p9(500, 200, Gdiplus::Color(0, 128, 255));
-
-	//renderer.fillTriangle(p1, p2, p3);
-
-	//renderer.fillTriangle(p1, p4, p5);
-
-	//renderer.drawLine(p1, p6);
-	//renderer.drawLine(p1, p7);
-	//
-	//renderer.drawLine(p1, p8);
-	//renderer.drawLine(p1, p9);
 	Eigen::Vector3f light = { 0, 0, 1 };
+	light.normalize();
 	for (CModel::TFace face : p_model->faces)
 	{
 		for (int i = 0; i < 3; ++i)
 		{
-			float intensity = face[i].vertex.n.dot(light);
+			float intensity = face[i].vertex.n.normalized().dot(light);
 			intensity = intensity > 1.0f ? 1.0f : intensity < 0.0f ? 0.0f : intensity;
+			//float intensity = 1.0f;
 			face[i].vertex.c = Gdiplus::Color(255 * intensity, 255 * intensity, 255 * intensity);
 		}
 		renderer.fillTriangle(face);
@@ -72,7 +50,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// Initialize GDI+.
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
-	CModel model("m003.obj", "m0031.mtl");
+	CModel model("m003.obj", "m0030.mtl");
 	p_model = &model;
 
 	// clear out the window class for use
@@ -121,7 +99,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	while (true)
 	{
 		// Check to see if any messages are waiting in the queue
-		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			// translate keystroke messages into the right format
 			TranslateMessage(&msg);

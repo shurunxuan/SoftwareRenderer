@@ -110,6 +110,7 @@ void CRenderer::drawPixel(CPixel pixel, float z) const
 {
 	if (pixel.x() < 0 || pixel.x() > width) return;
 	if (pixel.y() < 0 || pixel.y() > height) return;
+	// Z-buffering
 	if (z_buffer[pixel.x()][pixel.y()] < z) return;
 	buffer->SetPixel(pixel.x(), height - pixel.y(), pixel.color());
 	z_buffer[pixel.x()][pixel.y()] = z;
@@ -219,12 +220,16 @@ void CRenderer::fillTriangle(CPixel* pts) const
 
 void CRenderer::fillTriangle(CVertex v1, CVertex v2, CVertex v3) const
 {
+	// Backface culling
 	if ((v1.v - v2.v).cross(v2.v - v3.v).dot(Eigen::Vector3f(0, 0, 1)) < 0) return;
+
+	// View transformation
 	const auto scale = 2.5f;
 	CPixel p1(rint(v1.v(0) * scale) + 400, rint(v1.v(1) * scale) + 100, v1.c);
 	CPixel p2(rint(v2.v(0) * scale) + 400, rint(v2.v(1) * scale) + 100, v2.c);
 	CPixel p3(rint(v3.v(0) * scale) + 400, rint(v3.v(1) * scale) + 100, v3.c);
 
+	// Find bounding box
 	int minX = std::min(p1.x(), std::min(p2.x(), p3.x()));
 	int maxX = std::max(p1.x(), std::max(p2.x(), p3.x()));
 	int minY = std::min(p1.y(), std::min(p2.y(), p3.y()));
@@ -233,11 +238,14 @@ void CRenderer::fillTriangle(CVertex v1, CVertex v2, CVertex v3) const
 	for (int x = minX; x <= maxX; ++x)
 		for (int y = minY; y <= maxY; ++y)
 		{
+			// See if the pixel is in the triangle
 			Eigen::Vector3f b = barycentric(p1, p2, p3, x, y);
 			if (b(0) < 0 || b(1) < 0 || b(2) < 0) continue;
+			// Interpolate color
 			int R = rint(p1.color().GetR() * b(0) + p2.color().GetR() * b(1) + p3.color().GetR() * b(2));
 			int G = rint(p1.color().GetG() * b(0) + p2.color().GetG() * b(1) + p3.color().GetG() * b(2));
 			int B = rint(p1.color().GetB() * b(0) + p2.color().GetB() * b(1) + p3.color().GetB() * b(2));
+			// Interpolate z coordinate
 			float z = v1.v(2) * b(0) + v2.v(2) * b(1) + v3.v(2) * b(2);
 			drawPixel(CPixel(x, y, Gdiplus::Color(R, G, B)), -z);
 		}
@@ -253,12 +261,16 @@ void CRenderer::fillTriangle(CModel::TFace face) const
 	CVertex v1(face[0].vertex);
 	CVertex v2(face[1].vertex);
 	CVertex v3(face[2].vertex);
+	// Backface culling
 	if ((v1.v - v2.v).cross(v2.v - v3.v).dot(Eigen::Vector3f(0, 0, 1)) < 0) return;
+
+	// View transformation
 	const auto scale = 2.5f;
 	CPixel p1(rint(v1.v(0) * scale) + 400, rint(v1.v(1) * scale) + 100, v1.c);
 	CPixel p2(rint(v2.v(0) * scale) + 400, rint(v2.v(1) * scale) + 100, v2.c);
 	CPixel p3(rint(v3.v(0) * scale) + 400, rint(v3.v(1) * scale) + 100, v3.c);
 
+	// Find bounding box
 	int minX = std::min(p1.x(), std::min(p2.x(), p3.x()));
 	int maxX = std::max(p1.x(), std::max(p2.x(), p3.x()));
 	int minY = std::min(p1.y(), std::min(p2.y(), p3.y()));
@@ -267,13 +279,18 @@ void CRenderer::fillTriangle(CModel::TFace face) const
 	for (int x = minX; x <= maxX; ++x)
 		for (int y = minY; y <= maxY; ++y)
 		{
+			// See if the pixel is in the triangle
 			Eigen::Vector3f b = barycentric(p1, p2, p3, x, y);
 			if (b(0) < 0 || b(1) < 0 || b(2) < 0) continue;
+			// Interpolate color
 			float R = p1.color().GetR() * b(0) + p2.color().GetR() * b(1) + p3.color().GetR() * b(2);
 			float G = p1.color().GetG() * b(0) + p2.color().GetG() * b(1) + p3.color().GetG() * b(2);
 			float B = p1.color().GetB() * b(0) + p2.color().GetB() * b(1) + p3.color().GetB() * b(2);
+			// Interpolate z coordinate
 			float z = v1.v(2) * b(0) + v2.v(2) * b(1) + v3.v(2) * b(2);
+			// Interpolate texture coordinate
 			Eigen::Vector2f texture = v1.t * b(0) + v2.t * b(1) + v3.t * b(2);
+			// Get texture color
 			Gdiplus::Color t_color = getColorFromBitmap(texture(0), texture(1), face[0].material.texture);
 			Gdiplus::Color pixel_color(R / 255.0f * t_color.GetR(), G / 255.0f * t_color.GetG(), B / 255.0f * t_color.GetB());
 			drawPixel(CPixel(x, y, pixel_color), -z);
