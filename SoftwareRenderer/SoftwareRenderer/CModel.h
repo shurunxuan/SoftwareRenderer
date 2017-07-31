@@ -29,6 +29,6 @@ public:
 	std::vector<Eigen::Vector2f> texture;
 	std::vector<TFace> faces;
 public:
-	CModel(std::string obj_file, std::string mtl_file = "");
+	CModel(std::string base_path, std::string obj_file, std::string mtl_file = "");
 };
 

@@ -36,12 +36,12 @@ CModel::SFace::SFace(CVertex v, SMtl m)
 	:vertex(v), material(m)
 { }
 
-CModel::CModel(std::string obj_file, std::string mtl_file)
+CModel::CModel(std::string base_path, std::string obj_file, std::string mtl_file)
 {
 	std::map<std::string, SMtl> mtl_map;
 	if (mtl_file != "")
 	{
-		std::ifstream fin(mtl_file);
+		std::ifstream fin(base_path + mtl_file);
 		std::string line;
 		SMtl* current_mtl = nullptr;
 		while (getline(fin, line))
@@ -95,7 +95,7 @@ CModel::CModel(std::string obj_file, std::string mtl_file)
 			{
 				// string -> wstring
 				std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> cv;
-				std::wstring name = cv.from_bytes(s[1]);
+				std::wstring name = cv.from_bytes(base_path + s[1]);
 				current_mtl->texture = Gdiplus::Bitmap::FromFile(name.c_str());
 			}
 			else
@@ -104,7 +104,7 @@ CModel::CModel(std::string obj_file, std::string mtl_file)
 			}
 		}
 	}
-	std::ifstream fin(obj_file);
+	std::ifstream fin(base_path + obj_file);
 	std::string line;
 	std::string current_mtl = "";
 	while (getline(fin, line))
