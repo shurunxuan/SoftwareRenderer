@@ -2,17 +2,59 @@
 #include <time.h>
 #include <windows.h>
 #include <windowsx.h>
+#include <ShellScalingAPI.h>
 #include <gdiplus.h>
 #include "CRenderer.h"
 #include "CModel.h"
+#include "utils.h"
 #pragma comment (lib, "Winmm.lib")
 #pragma comment (lib, "Gdiplus.lib")
+#pragma comment (lib, "Shcore.lib")
+
+class CGouraudShader : public IShader
+{
+public:
+	CGouraudShader(CRenderer* renderer_ptr) : renderer(renderer_ptr) {}
+	std::vector<CVertex> vertex(CModel::TFace& input) override
+	{
+		vertex_output.resize(0);
+		vertex_output.reserve(3);
+		// View transformation
+		vertex_output.push_back(renderer->trans(input[0].vertex));
+		vertex_output.push_back(renderer->trans(input[1].vertex));
+		vertex_output.push_back(renderer->trans(input[2].vertex));
+		texture = input[0].material.texture;
+
+		return vertex_output;
+	}
+	Gdiplus::Color pixel(Eigen::Vector3f barycentric) override
+	{
+		// Interpolate color
+		float R = vertex_output[0].c.GetR() * barycentric(0) + vertex_output[1].c.GetR() * barycentric(1) + vertex_output[2].c.GetR() * barycentric(2);
+		float G = vertex_output[0].c.GetG() * barycentric(0) + vertex_output[1].c.GetG() * barycentric(1) + vertex_output[2].c.GetG() * barycentric(2);
+		float B = vertex_output[0].c.GetB() * barycentric(0) + vertex_output[1].c.GetB() * barycentric(1) + vertex_output[2].c.GetB() * barycentric(2);
+		// Interpolate texture coordinate
+		Eigen::Vector2f tex = vertex_output[0].t * barycentric(0) + vertex_output[1].t * barycentric(1) + vertex_output[2].t * barycentric(2);
+		// Get texture color
+		Gdiplus::Color t_color = getColorFromBitmap(tex(0), tex(1), texture);
+		const Gdiplus::Color pixel_color(R / 255.0f * t_color.GetR(), G / 255.0f * t_color.GetG(), B / 255.0f * t_color.GetB());
+		return pixel_color;
+	}
+private:
+	CRenderer* renderer;
+	std::vector<CVertex> vertex_output;
+	Gdiplus::Bitmap* texture;
+};
 
 CRenderer* p_renderer = nullptr;
 CModel* p_model = nullptr;
+CGouraudShader* p_shader = nullptr;
 float p_v = 0.0f;
 bool dir = false;
 int rotate = 0;
+
+
+
 VOID paint_main(CRenderer& renderer)
 {
 	//if (dir) p_v += 10.0f;
@@ -24,7 +66,7 @@ VOID paint_main(CRenderer& renderer)
 	light.normalize();
 	//Eigen::Vector3f light = { 0, 0, 1 };
 	//renderer.cameraLookat(Eigen::Vector3f(0, p_v + 50, 400), Eigen::Vector3f(0, 0, -1), Eigen::Vector3f(0, 1, 0));
-	renderer.cameraLookat(Eigen::Vector3f(0, 20, 0) + 100.0f * light, -light, Eigen::Vector3f(0, 1, 0));
+	renderer.cameraLookat(Eigen::Vector3f(0, 20, 0) + 600.0f * light, -light, Eigen::Vector3f(0, 1, 0));
 	for (CModel::TFace face : p_model->faces)
 	{
 		for (int i = 0; i < 3; ++i)
@@ -52,6 +94,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	LPSTR lpCmdLine,
 	int nCmdShow)
 {
+	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	// this struct holds information for the window class
 	WNDCLASSEX wc;
 
@@ -61,7 +104,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// Initialize GDI+.
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
-	CModel model("Models\\421_01_0\\", "0.obj", "0.mtl");
+	CModel model("Models\\382_00_0\\", "0.obj", "0.mtl");
 	p_model = &model;
 
 	// clear out the window class for use
@@ -86,8 +129,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		WS_OVERLAPPEDWINDOW,    // window style
 		CW_USEDEFAULT,    // x-position of the window
 		CW_USEDEFAULT,    // y-position of the window
-		800,    // width of the window
-		800,    // height of the window
+		1946,    // width of the window
+		1151,    // height of the window
 		nullptr,    // we have no parent window, NULL
 		nullptr,    // we aren't using menus, NULL
 		hInstance,    // application handle
@@ -105,6 +148,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	CRenderer renderer(hWnd);
 	p_renderer = &renderer;
+	CGouraudShader shader(p_renderer);
+	p_shader = &shader;
+	renderer.setShader(p_shader);
 	renderer.setPerspectiveCamera(-1.f, -2.f, 3.14159f / 3.0f);
 
 	TCHAR title[100];

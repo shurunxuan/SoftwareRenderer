@@ -114,14 +114,18 @@
     <ClCompile Include="CModel.cpp" />
     <ClCompile Include="CRenderer.cpp" />
     <ClCompile Include="CVertex.cpp" />
+    <ClCompile Include="IShader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="CPixel.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CModel.h" />
     <ClInclude Include="CPixel.h" />
     <ClInclude Include="CRenderer.h" />
     <ClInclude Include="CVertex.h" />
+    <ClInclude Include="IShader.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" />

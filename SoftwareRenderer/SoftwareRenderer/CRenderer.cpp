@@ -3,6 +3,7 @@
 #include "CRenderer.h"
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+#include "utils.h"
 #pragma comment (lib,"Gdiplus.lib")
 
 #undef max
@@ -27,21 +28,7 @@
 //	return result;
 //}
 
-Eigen::Vector3f barycentric(CPixel p1, CPixel p2, CPixel p3, int x, int y) {
 
-	Eigen::Vector3f u = Eigen::Vector3f(p3.x() - p1.x(), p2.x() - p1.x(), p1.x() - x).cross(Eigen::Vector3f(p3.y() - p1.y(), p2.y() - p1.y(), p1.y() - y));
-	if (std::abs(u(2)) < 1) return Eigen::Vector3f(-1, 1, 1); // triangle is degenerate, in this case return smth with negative coordinates 
-	return Eigen::Vector3f(1.f - (u(0) + u(1)) / u(2), u(1) / u(2), u(0) / u(2));
-}
-
-Gdiplus::Color getColorFromBitmap(float x, float y, Gdiplus::Bitmap* pBitmap)
-{
-	Gdiplus::Color color;
-	float x_ = (x - int(x)) * pBitmap->GetWidth();
-	float y_ = (1.0f - (y - int(y))) * pBitmap->GetHeight();
-	pBitmap->GetPixel(int(x_), int(y_), &color);
-	return color;
-}
 
 void CRenderer::init()
 {
@@ -261,10 +248,11 @@ void CRenderer::fillTriangle(CVertex* vtxs) const
 
 void CRenderer::fillTriangle(CModel::TFace face)
 {
-	// View transformation
-	CVertex v1(trans(face[0].vertex));
-	CVertex v2(trans(face[1].vertex));
-	CVertex v3(trans(face[2].vertex));
+	// Vertex shader
+	auto vs_out = shader->vertex(face);
+	CVertex v1(vs_out[0]);
+	CVertex v2(vs_out[1]);
+	CVertex v3(vs_out[2]);
 
 	// Backface culling
 	if ((v1.v - v2.v).cross(v2.v - v3.v)(2) < 0) return;
@@ -296,17 +284,11 @@ void CRenderer::fillTriangle(CModel::TFace face)
 			// See if the pixel is in the triangle
 			Eigen::Vector3f b = barycentric(p1, p2, p3, x, y);
 			if (b(0) < 0 || b(1) < 0 || b(2) < 0) continue;
-			// Interpolate color
-			float R = p1.color().GetR() * b(0) + p2.color().GetR() * b(1) + p3.color().GetR() * b(2);
-			float G = p1.color().GetG() * b(0) + p2.color().GetG() * b(1) + p3.color().GetG() * b(2);
-			float B = p1.color().GetB() * b(0) + p2.color().GetB() * b(1) + p3.color().GetB() * b(2);
 			// Interpolate z coordinate
 			float z = v1.v(2) * b(0) + v2.v(2) * b(1) + v3.v(2) * b(2);
-			// Interpolate texture coordinate
-			Eigen::Vector2f texture = v1.t * b(0) + v2.t * b(1) + v3.t * b(2);
-			// Get texture color
-			Gdiplus::Color t_color = getColorFromBitmap(texture(0), texture(1), face[0].material.texture);
-			Gdiplus::Color pixel_color(R / 255.0f * t_color.GetR(), G / 255.0f * t_color.GetG(), B / 255.0f * t_color.GetB());
+
+			// Pixel shader
+			const Gdiplus::Color pixel_color(shader->pixel(b));
 			drawPixel(CPixel(x, y, pixel_color), -z);
 		}
 }
@@ -427,4 +409,9 @@ CVertex CRenderer::trans(CVertex v)
 	//fout << v << std::endl;
 	//fout.close();
 	return result;
+}
+
+void CRenderer::setShader(IShader* shader)
+{
+	this->shader = shader;
 }

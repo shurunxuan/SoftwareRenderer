@@ -5,6 +5,7 @@
 #include "CPixel.h"
 #include "CVertex.h"
 #include "CModel.h"
+#include "IShader.h"
 
 #undef max
 #undef min
@@ -24,6 +25,8 @@ private:
 	Gdiplus::Graphics* graphics = nullptr;
 	long width;
 	long height;
+
+	IShader* shader = nullptr;
 
 	void init();
 
@@ -80,6 +83,8 @@ public:
 	Eigen::Matrix4f cameraTrans();
 
 	CVertex trans(CVertex v);
+
+	void setShader(IShader* shader);
 
 
 
