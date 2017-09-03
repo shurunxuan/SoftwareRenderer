@@ -14,37 +14,37 @@
 class CGouraudShader : public IShader
 {
 public:
-	explicit CGouraudShader(CRenderer* renderer_ptr) : renderer(renderer_ptr) {}
+	explicit CGouraudShader(CRenderer* renderer_ptr) : renderer_(renderer_ptr) {}
 	std::vector<CVertex> vertex(CModel::TFace& input) override
 	{
-		vertex_output.resize(0);
-		vertex_output.reserve(3);
+		vertex_output_.resize(0);
+		vertex_output_.reserve(3);
 		// View transformation
-		vertex_output.push_back(renderer->trans(input[0].vertex));
-		vertex_output.push_back(renderer->trans(input[1].vertex));
-		vertex_output.push_back(renderer->trans(input[2].vertex));
-		texture = input[0].material.texture;
+		vertex_output_.push_back(renderer_->trans(input[0].vertex));
+		vertex_output_.push_back(renderer_->trans(input[1].vertex));
+		vertex_output_.push_back(renderer_->trans(input[2].vertex));
+		material_ = input[0].material;
 
 		for (int i = 0; i < 3; ++i)
 		{
-			intensity[i] = input[i].vertex.n.normalized().dot(light_);
-			intensity[i] = intensity[i] > 1.0f ? 1.0f : intensity[i] < 0.0f ? 0.0f : intensity[i];
+			intensity_[i] = input[i].vertex.n.normalized().dot(light_);
+			intensity_[i] = intensity_[i] > 1.0f ? 1.0f : intensity_[i] < 0.0f ? 0.0f : intensity_[i];
 		}
 
-		return vertex_output;
+		return vertex_output_;
 	}
 	Gdiplus::Color pixel(Eigen::Vector3f barycentric) override
 	{
 		// Interpolate color
-		float R = vertex_output[0].c.GetR() * barycentric(0) + vertex_output[1].c.GetR() * barycentric(1) + vertex_output[2].c.GetR() * barycentric(2);
-		float G = vertex_output[0].c.GetG() * barycentric(0) + vertex_output[1].c.GetG() * barycentric(1) + vertex_output[2].c.GetG() * barycentric(2);
-		float B = vertex_output[0].c.GetB() * barycentric(0) + vertex_output[1].c.GetB() * barycentric(1) + vertex_output[2].c.GetB() * barycentric(2);
+		float R = vertex_output_[0].c.GetR() * barycentric(0) + vertex_output_[1].c.GetR() * barycentric(1) + vertex_output_[2].c.GetR() * barycentric(2);
+		float G = vertex_output_[0].c.GetG() * barycentric(0) + vertex_output_[1].c.GetG() * barycentric(1) + vertex_output_[2].c.GetG() * barycentric(2);
+		float B = vertex_output_[0].c.GetB() * barycentric(0) + vertex_output_[1].c.GetB() * barycentric(1) + vertex_output_[2].c.GetB() * barycentric(2);
 
-		float i = intensity[0] * barycentric(0) + intensity[1] * barycentric(1) + intensity[2] * barycentric(2);
+		float i = intensity_[0] * barycentric(0) + intensity_[1] * barycentric(1) + intensity_[2] * barycentric(2);
 		// Interpolate texture coordinate
-		Eigen::Vector2f tex = vertex_output[0].t * barycentric(0) + vertex_output[1].t * barycentric(1) + vertex_output[2].t * barycentric(2);
+		Eigen::Vector2f tex = vertex_output_[0].t * barycentric(0) + vertex_output_[1].t * barycentric(1) + vertex_output_[2].t * barycentric(2);
 		// Get texture color
-		Gdiplus::Color t_color = getColorFromBitmap(tex(0), tex(1), texture);
+		Gdiplus::Color t_color = getColorFromBitmap(tex(0), tex(1), material_.texture);
 		const Gdiplus::Color pixel_color(R / 255.0f * i * t_color.GetR(), G / 255.0f * i * t_color.GetG(), B / 255.0f * i * t_color.GetB());
 		return pixel_color;
 	}
@@ -53,10 +53,110 @@ public:
 	//	light_ = renderer->trans(light).normalized();
 	//}
 private:
-	CRenderer* renderer;
-	std::vector<CVertex> vertex_output;
-	Gdiplus::Bitmap* texture = nullptr;
-	float intensity[3];
+	CRenderer* renderer_;
+	std::vector<CVertex> vertex_output_;
+	float intensity_[3];
+	CModel::SMtl material_;
+};
+
+class CPhongShader : public IShader
+{
+public:
+	explicit CPhongShader(CRenderer* renderer_ptr) : renderer_(renderer_ptr) {}
+	std::vector<CVertex> vertex(CModel::TFace& input) override
+	{
+		vertex_output_.resize(0);
+		vertex_output_.reserve(3);
+		// View transformation
+		vertex_output_.push_back(renderer_->trans(input[0].vertex));
+		vertex_output_.push_back(renderer_->trans(input[1].vertex));
+		vertex_output_.push_back(renderer_->trans(input[2].vertex));
+
+		vertex_input_.resize(0);
+		vertex_input_.reserve(3);
+		vertex_input_.push_back(input[0].vertex);
+		vertex_input_.push_back(input[1].vertex);
+		vertex_input_.push_back(input[2].vertex);
+
+		material_ = input[0].material;
+
+		return vertex_output_;
+	}
+	Gdiplus::Color pixel(Eigen::Vector3f barycentric) override
+	{
+		// vector l
+		Eigen::Vector3f l = light_.normalized();
+		// normal
+		Eigen::Vector3f n = vertex_input_[0].n * barycentric(0) + vertex_input_[1].n * barycentric(1) + vertex_input_[2].n * barycentric(2);
+		n.normalize();
+		// position
+		Eigen::Vector3f pos = vertex_input_[0].v * barycentric(0) + vertex_input_[1].v * barycentric(1) + vertex_input_[2].v * barycentric(2);
+		// view
+		Eigen::Vector3f v = renderer_->getCameraPosition() - pos;
+		v.normalize();
+		// halfway vector
+		Eigen::Vector3f h = l + v;
+		h.normalize();
+		// r vector
+		Eigen::Vector3f rv = 2 * (l.dot(n)) * n - l;
+
+		// diffuse factor l dot n
+		float fd = l.dot(n);
+		fd = fd < 0.0f ? 0.0f : fd;
+		// specular factor r dot v / n dot h
+		float sd = /*n.dot(h);*/rv.dot(v);
+		sd = sd < 0.0f ? 0.0f : sd;
+
+		// Interpolate diffuse color
+		float R = vertex_output_[0].c.GetR() * barycentric(0) + vertex_output_[1].c.GetR() * barycentric(1) + vertex_output_[2].c.GetR() * barycentric(2);
+		float G = vertex_output_[0].c.GetG() * barycentric(0) + vertex_output_[1].c.GetG() * barycentric(1) + vertex_output_[2].c.GetG() * barycentric(2);
+		float B = vertex_output_[0].c.GetB() * barycentric(0) + vertex_output_[1].c.GetB() * barycentric(1) + vertex_output_[2].c.GetB() * barycentric(2);
+		// Interpolate texture coordinate
+		Eigen::Vector2f tex = vertex_output_[0].t * barycentric(0) + vertex_output_[1].t * barycentric(1) + vertex_output_[2].t * barycentric(2);
+		// Get texture color
+		Gdiplus::Color t_color = getColorFromBitmap(tex(0), tex(1), material_.texture);
+
+		// diffuse (0 ~ 255)
+		float dR = R / 255.0f * fd * t_color.GetR() * material_.diffuse(0);
+		float dG = G / 255.0f * fd * t_color.GetG() * material_.diffuse(1);
+		float dB = B / 255.0f * fd * t_color.GetB() * material_.diffuse(2);
+
+		// ambient (0 ~ 255)
+		float aR = material_.ambient(0) * ambient_.GetR();
+		float aG = material_.ambient(1) * ambient_.GetG();
+		float aB = material_.ambient(2) * ambient_.GetB();
+
+		// specular (0 ~ 255)
+		float sR = material_.specular(0) * pow(sd, material_.shininess) * specular_.GetR();
+		float sG = material_.specular(1) * pow(sd, material_.shininess) * specular_.GetG();
+		float sB = material_.specular(2) * pow(sd, material_.shininess) * specular_.GetB();
+
+		// all
+		int r = round(aR + dR + sR);
+		int g = round(aG + dG + sG);
+		int b = round(aB + dB + sB);
+		r = r > 255 ? 255 : r < 0 ? 0 : r;
+		g = g > 255 ? 255 : g < 0 ? 0 : g;
+		b = b > 255 ? 255 : b < 0 ? 0 : b;
+
+		const Gdiplus::Color pixel_color(r, g, b);
+		return pixel_color;
+	}
+
+	void setLightProperties(Gdiplus::Color ambient = Gdiplus::Color(0, 0, 0), Gdiplus::Color diffuse = Gdiplus::Color(255, 255, 255), Gdiplus::Color specular = Gdiplus::Color(255, 255, 255))
+	{
+		ambient_ = ambient;
+		diffuse_ = diffuse;
+		specular_ = specular;
+	}
+private:
+	CRenderer* renderer_;
+	std::vector<CVertex> vertex_input_;
+	std::vector<CVertex> vertex_output_;
+	CModel::SMtl material_;
+	Gdiplus::Color ambient_;
+	Gdiplus::Color diffuse_;
+	Gdiplus::Color specular_;
 };
 
 CRenderer* p_renderer = nullptr;
@@ -79,8 +179,8 @@ VOID paint_main(CRenderer& renderer)
 	light.normalize();
 	//Eigen::Vector3f light = { 0, 0, 1 };
 	//renderer.cameraLookat(Eigen::Vector3f(0, p_v + 50, 400), Eigen::Vector3f(0, 0, -1), Eigen::Vector3f(0, 1, 0));
-	renderer.cameraLookat(Eigen::Vector3f(0, 20, 0) + 600.0f * light, -light, Eigen::Vector3f(0, 1, 0));
-	p_shader->setLight(light);
+	renderer.cameraLookat(Eigen::Vector3f(0, 100, 0) + 500.0f * light, -light, Eigen::Vector3f(0, 1, 0));
+	p_shader->setLight(light + Eigen::Vector3f(0, 20, 0));
 	for (const CModel::TFace face : p_model->faces)
 	{
 		renderer.fillTriangle(face);
@@ -111,7 +211,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// Initialize GDI+.
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
-	CModel model("Models\\382_00_0\\", "0.obj", "0.mtl");
+	CModel model("Models\\003_01_0\\", "0.obj", "0.mtl");
 	p_model = &model;
 
 	// clear out the window class for use
@@ -155,7 +255,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	CRenderer renderer(hWnd);
 	p_renderer = &renderer;
-	CGouraudShader shader(p_renderer);
+	//CGouraudShader shader(p_renderer);
+	CPhongShader shader(p_renderer);
+	shader.setLightProperties(/*Gdiplus::Color(63, 63, 63)*/);
 	p_shader = &shader;
 	renderer.setShader(&shader);
 	renderer.setPerspectiveCamera(-1.f, -2.f, 3.14159f / 3.0f);

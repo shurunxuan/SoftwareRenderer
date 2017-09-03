@@ -61,6 +61,7 @@ CModel::CModel(std::string base_path, std::string obj_file, std::string mtl_file
 				str2num(s[1], r);
 				str2num(s[2], g);
 				str2num(s[3], b);
+				//current_mtl->diffuse = Eigen::Vector3f(1, 1, 1);
 				current_mtl->diffuse = Eigen::Vector3f(r, g, b);
 			}
 			else if (first_token == "Ka")
@@ -77,7 +78,8 @@ CModel::CModel(std::string base_path, std::string obj_file, std::string mtl_file
 				str2num(s[1], r);
 				str2num(s[2], g);
 				str2num(s[3], b);
-				current_mtl->specular = Eigen::Vector3f(r, g, b);
+				current_mtl->specular = Eigen::Vector3f(1, 1, 1);
+				//current_mtl->specular = Eigen::Vector3f(r, g, b);
 			}
 			else if (first_token == "Ke")
 			{
@@ -89,7 +91,8 @@ CModel::CModel(std::string base_path, std::string obj_file, std::string mtl_file
 			}
 			else if (first_token == "Ns")
 			{
-				str2num(s[1], current_mtl->shininess);
+				current_mtl->shininess = 20;
+				//str2num(s[1], current_mtl->shininess);
 			}
 			else if (first_token == "map_Kd")
 			{

@@ -319,6 +319,11 @@ void CRenderer::resetPerspectiveCamera()
 	camera_.b = -camera_.t;
 }
 
+Eigen::Vector3f CRenderer::getCameraPosition()
+{
+	return camera_.e;
+}
+
 Eigen::Matrix4f CRenderer::viewport()
 {
 	Eigen::Matrix4f Mvp(Eigen::Matrix4f::Zero());

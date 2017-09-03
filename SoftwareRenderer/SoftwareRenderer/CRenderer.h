@@ -77,6 +77,8 @@ public:
 	void cameraLookat(Eigen::Vector3f e, Eigen::Vector3f g, Eigen::Vector3f t);
 	void resetPerspectiveCamera();
 
+	Eigen::Vector3f getCameraPosition();
+
 	Eigen::Matrix4f viewport();
 	Eigen::Matrix4f orthographic();
 	Eigen::Matrix4f P();
