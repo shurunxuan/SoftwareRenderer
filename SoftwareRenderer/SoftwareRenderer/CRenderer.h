@@ -17,22 +17,22 @@ public:
 private:
 	HDC hdc_;
 	HWND hwnd_;
-	PAINTSTRUCT ps;
+	PAINTSTRUCT ps_;
 
-	Gdiplus::Bitmap* buffer = nullptr;
+	Gdiplus::Bitmap* buffer_ = nullptr;
 
-	Gdiplus::Graphics* gr = nullptr;
-	Gdiplus::Graphics* graphics = nullptr;
-	long width;
-	long height;
+	Gdiplus::Graphics* gr_ = nullptr;
+	Gdiplus::Graphics* graphics_ = nullptr;
+	long width_;
+	long height_;
 
-	IShader* shader = nullptr;
+	IShader* shader_ = nullptr;
 
 	void init();
 
 	void deinit() const;
 
-	float** z_buffer = nullptr;
+	float** z_buffer_ = nullptr;
 	struct camera
 	{
 		float n;
@@ -47,9 +47,9 @@ private:
 		Eigen::Vector3f u;
 		Eigen::Vector3f v;
 		Eigen::Vector3f w;
-	} camera;
+	} camera_;
 public:
-	CRenderer(HWND hwnd);
+	explicit CRenderer(HWND hwnd);
 	~CRenderer();
 
 	void resizeBuffer();

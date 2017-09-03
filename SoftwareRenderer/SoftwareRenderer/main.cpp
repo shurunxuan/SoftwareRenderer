@@ -14,7 +14,7 @@
 class CGouraudShader : public IShader
 {
 public:
-	CGouraudShader(CRenderer* renderer_ptr) : renderer(renderer_ptr) {}
+	explicit CGouraudShader(CRenderer* renderer_ptr) : renderer(renderer_ptr) {}
 	std::vector<CVertex> vertex(CModel::TFace& input) override
 	{
 		vertex_output.resize(0);
@@ -25,6 +25,12 @@ public:
 		vertex_output.push_back(renderer->trans(input[2].vertex));
 		texture = input[0].material.texture;
 
+		for (int i = 0; i < 3; ++i)
+		{
+			intensity[i] = input[i].vertex.n.normalized().dot(light_);
+			intensity[i] = intensity[i] > 1.0f ? 1.0f : intensity[i] < 0.0f ? 0.0f : intensity[i];
+		}
+
 		return vertex_output;
 	}
 	Gdiplus::Color pixel(Eigen::Vector3f barycentric) override
@@ -33,22 +39,29 @@ public:
 		float R = vertex_output[0].c.GetR() * barycentric(0) + vertex_output[1].c.GetR() * barycentric(1) + vertex_output[2].c.GetR() * barycentric(2);
 		float G = vertex_output[0].c.GetG() * barycentric(0) + vertex_output[1].c.GetG() * barycentric(1) + vertex_output[2].c.GetG() * barycentric(2);
 		float B = vertex_output[0].c.GetB() * barycentric(0) + vertex_output[1].c.GetB() * barycentric(1) + vertex_output[2].c.GetB() * barycentric(2);
+
+		float i = intensity[0] * barycentric(0) + intensity[1] * barycentric(1) + intensity[2] * barycentric(2);
 		// Interpolate texture coordinate
 		Eigen::Vector2f tex = vertex_output[0].t * barycentric(0) + vertex_output[1].t * barycentric(1) + vertex_output[2].t * barycentric(2);
 		// Get texture color
 		Gdiplus::Color t_color = getColorFromBitmap(tex(0), tex(1), texture);
-		const Gdiplus::Color pixel_color(R / 255.0f * t_color.GetR(), G / 255.0f * t_color.GetG(), B / 255.0f * t_color.GetB());
+		const Gdiplus::Color pixel_color(R / 255.0f * i * t_color.GetR(), G / 255.0f * i * t_color.GetG(), B / 255.0f * i * t_color.GetB());
 		return pixel_color;
 	}
+	//void setLight(Eigen::Vector3f light) override
+	//{
+	//	light_ = renderer->trans(light).normalized();
+	//}
 private:
 	CRenderer* renderer;
 	std::vector<CVertex> vertex_output;
-	Gdiplus::Bitmap* texture;
+	Gdiplus::Bitmap* texture = nullptr;
+	float intensity[3];
 };
 
 CRenderer* p_renderer = nullptr;
 CModel* p_model = nullptr;
-CGouraudShader* p_shader = nullptr;
+IShader* p_shader = nullptr;
 float p_v = 0.0f;
 bool dir = false;
 int rotate = 0;
@@ -67,15 +80,9 @@ VOID paint_main(CRenderer& renderer)
 	//Eigen::Vector3f light = { 0, 0, 1 };
 	//renderer.cameraLookat(Eigen::Vector3f(0, p_v + 50, 400), Eigen::Vector3f(0, 0, -1), Eigen::Vector3f(0, 1, 0));
 	renderer.cameraLookat(Eigen::Vector3f(0, 20, 0) + 600.0f * light, -light, Eigen::Vector3f(0, 1, 0));
-	for (CModel::TFace face : p_model->faces)
+	p_shader->setLight(light);
+	for (const CModel::TFace face : p_model->faces)
 	{
-		for (int i = 0; i < 3; ++i)
-		{
-			float intensity = face[i].vertex.n.normalized().dot(light);
-			intensity = intensity > 1.0f ? 1.0f : intensity < 0.0f ? 0.0f : intensity;
-			//float intensity = 1.0f;
-			face[i].vertex.c = Gdiplus::Color(255 * intensity, 255 * intensity, 255 * intensity);
-		}
 		renderer.fillTriangle(face);
 		//renderer.fillTriangle(face[0].vertex, face[1].vertex, face[2].vertex);
 	}
@@ -150,7 +157,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	p_renderer = &renderer;
 	CGouraudShader shader(p_renderer);
 	p_shader = &shader;
-	renderer.setShader(p_shader);
+	renderer.setShader(&shader);
 	renderer.setPerspectiveCamera(-1.f, -2.f, 3.14159f / 3.0f);
 
 	TCHAR title[100];

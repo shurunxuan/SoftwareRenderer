@@ -32,31 +32,31 @@
 
 void CRenderer::init()
 {
-	hdc_ = BeginPaint(hwnd_, &ps);
-	graphics = new Gdiplus::Graphics(hdc_);
+	hdc_ = BeginPaint(hwnd_, &ps_);
+	graphics_ = new Gdiplus::Graphics(hdc_);
 	RECT rect;
 	GetClientRect(hwnd_, &rect);
-	width = rect.right - rect.left;
-	height = rect.bottom - rect.top;
+	width_ = rect.right - rect.left;
+	height_ = rect.bottom - rect.top;
 
-	buffer = new Gdiplus::Bitmap(width, height);
-	gr = new Gdiplus::Graphics(buffer);
+	buffer_ = new Gdiplus::Bitmap(width_, height_);
+	gr_ = new Gdiplus::Graphics(buffer_);
 
-	z_buffer = new float*[width + 1];
-	for (int i = 0; i <= width; ++i)
-		z_buffer[i] = new float[height + 1];
+	z_buffer_ = new float*[width_ + 1];
+	for (int i = 0; i <= width_; ++i)
+		z_buffer_[i] = new float[height_ + 1];
 }
 
 void CRenderer::deinit() const
 {
-	for (int i = 0; i < width; ++i)
-		delete z_buffer[i];
-	delete z_buffer;
+	for (int i = 0; i < width_; ++i)
+		delete z_buffer_[i];
+	delete z_buffer_;
 
-	delete gr;
-	delete buffer;
-	delete graphics;
-	EndPaint(hwnd_, &ps);
+	delete gr_;
+	delete buffer_;
+	delete graphics_;
+	EndPaint(hwnd_, &ps_);
 }
 
 CRenderer::CRenderer(HWND hwnd)
@@ -72,7 +72,7 @@ CRenderer::~CRenderer()
 
 void CRenderer::resizeBuffer()
 {
-	if (gr == nullptr || buffer == nullptr || graphics == nullptr || z_buffer == nullptr) return;
+	if (gr_ == nullptr || buffer_ == nullptr || graphics_ == nullptr || z_buffer_ == nullptr) return;
 
 	deinit();
 	init();
@@ -98,12 +98,12 @@ long CRenderer::getHeight() const
 
 void CRenderer::drawPixel(CPixel pixel, float z) const
 {
-	if (pixel.x() < 0 || pixel.x() > width) return;
-	if (pixel.y() < 0 || pixel.y() > height) return;
+	if (pixel.x() < 0 || pixel.x() > width_) return;
+	if (pixel.y() < 0 || pixel.y() > height_) return;
 	// Z-buffering
-	if (z_buffer[pixel.x()][pixel.y()] < z) return;
-	buffer->SetPixel(pixel.x(), height - pixel.y(), pixel.color());
-	z_buffer[pixel.x()][pixel.y()] = z;
+	if (z_buffer_[pixel.x()][pixel.y()] < z) return;
+	buffer_->SetPixel(pixel.x(), height_ - pixel.y(), pixel.color());
+	z_buffer_[pixel.x()][pixel.y()] = z;
 }
 
 void CRenderer::drawLine(CPixel p1, CPixel p2) const
@@ -249,7 +249,7 @@ void CRenderer::fillTriangle(CVertex* vtxs) const
 void CRenderer::fillTriangle(CModel::TFace face)
 {
 	// Vertex shader
-	auto vs_out = shader->vertex(face);
+	auto vs_out = shader_->vertex(face);
 	CVertex v1(vs_out[0]);
 	CVertex v2(vs_out[1]);
 	CVertex v3(vs_out[2]);
@@ -258,12 +258,12 @@ void CRenderer::fillTriangle(CModel::TFace face)
 	if ((v1.v - v2.v).cross(v2.v - v3.v)(2) < 0) return;
 
 	// Just clip all the triangle if one vertex is outside the viewport
-	if (v1.v(0) > width || v1.v(0) < 0) return;
-	if (v2.v(0) > width || v2.v(0) < 0) return;
-	if (v3.v(0) > width || v3.v(0) < 0) return;
-	if (v1.v(1) > height || v1.v(1) < 0) return;
-	if (v2.v(1) > height || v2.v(1) < 0) return;
-	if (v3.v(1) > height || v3.v(1) < 0) return;
+	if (v1.v(0) > width_ || v1.v(0) < 0) return;
+	if (v2.v(0) > width_ || v2.v(0) < 0) return;
+	if (v3.v(0) > width_ || v3.v(0) < 0) return;
+	if (v1.v(1) > height_ || v1.v(1) < 0) return;
+	if (v2.v(1) > height_ || v2.v(1) < 0) return;
+	if (v3.v(1) > height_ || v3.v(1) < 0) return;
 	//const auto scale = 2.5f;
 	//CPixel p1(rint(v1.v(0) * scale) + 400, rint(v1.v(1) * scale) + 100, v1.c);
 	//CPixel p2(rint(v2.v(0) * scale) + 400, rint(v2.v(1) * scale) + 100, v2.c);
@@ -288,67 +288,67 @@ void CRenderer::fillTriangle(CModel::TFace face)
 			float z = v1.v(2) * b(0) + v2.v(2) * b(1) + v3.v(2) * b(2);
 
 			// Pixel shader
-			const Gdiplus::Color pixel_color(shader->pixel(b));
+			const Gdiplus::Color pixel_color(shader_->pixel(b));
 			drawPixel(CPixel(x, y, pixel_color), -z);
 		}
 }
 
 void CRenderer::setPerspectiveCamera(float near, float far, float fov)
 {
-	camera.n = near;
-	camera.f = far;
-	camera.theta = fov;
+	camera_.n = near;
+	camera_.f = far;
+	camera_.theta = fov;
 	resetPerspectiveCamera();
 }
 
 void CRenderer::cameraLookat(Eigen::Vector3f e, Eigen::Vector3f g, Eigen::Vector3f t)
 {
-	camera.e = e;
-	camera.g = g;
-	camera.w = -g / abs(g.norm());
-	auto temp = t.cross(camera.w);
-	camera.u = temp / abs(temp.norm());
-	camera.v = camera.w.cross(camera.u);
+	camera_.e = e;
+	camera_.g = g;
+	camera_.w = -g / abs(g.norm());
+	auto temp = t.cross(camera_.w);
+	camera_.u = temp / abs(temp.norm());
+	camera_.v = camera_.w.cross(camera_.u);
 }
 
 void CRenderer::resetPerspectiveCamera()
 {
-	camera.t = tanf(camera.theta / 2.0f) * abs(camera.n);
-	camera.r = float(width) / float(height) * camera.t;
-	camera.l = -camera.r;
-	camera.b = -camera.t;
+	camera_.t = tanf(camera_.theta / 2.0f) * abs(camera_.n);
+	camera_.r = float(width_) / float(height_) * camera_.t;
+	camera_.l = -camera_.r;
+	camera_.b = -camera_.t;
 }
 
 Eigen::Matrix4f CRenderer::viewport()
 {
 	Eigen::Matrix4f Mvp(Eigen::Matrix4f::Zero());
-	Mvp(0, 0) = width / 2.0f;
-	Mvp(1, 1) = height / 2.0f;
+	Mvp(0, 0) = width_ / 2.0f;
+	Mvp(1, 1) = height_ / 2.0f;
 	Mvp(2, 2) = Mvp(3, 3) = 1.0f;
-	Mvp(0, 3) = (width - 1) / 2.0f;
-	Mvp(1, 3) = (height - 1) / 2.0f;
+	Mvp(0, 3) = (width_ - 1) / 2.0f;
+	Mvp(1, 3) = (height_ - 1) / 2.0f;
 	return Mvp;
 }
 
 Eigen::Matrix4f CRenderer::orthographic()
 {
 	Eigen::Matrix4f Morth(Eigen::Matrix4f::Zero());
-	Morth(0, 0) = 2.0f / (camera.r - camera.l);
-	Morth(1, 1) = 2.0f / (camera.t - camera.b);
-	Morth(2, 2) = 2.0f / (camera.n - camera.f);
+	Morth(0, 0) = 2.0f / (camera_.r - camera_.l);
+	Morth(1, 1) = 2.0f / (camera_.t - camera_.b);
+	Morth(2, 2) = 2.0f / (camera_.n - camera_.f);
 	Morth(3, 3) = 1.0f;
-	Morth(0, 3) = -(camera.r + camera.l) * (camera.r - camera.l);
-	Morth(1, 3) = -(camera.t + camera.b) * (camera.t - camera.b);
-	Morth(2, 3) = -(camera.n + camera.f) * (camera.n - camera.f);
+	Morth(0, 3) = -(camera_.r + camera_.l) * (camera_.r - camera_.l);
+	Morth(1, 3) = -(camera_.t + camera_.b) * (camera_.t - camera_.b);
+	Morth(2, 3) = -(camera_.n + camera_.f) * (camera_.n - camera_.f);
 	return Morth;
 }
 
 Eigen::Matrix4f CRenderer::P()
 {
 	Eigen::Matrix4f p(Eigen::Matrix4f::Zero());
-	p(0, 0) = p(1, 1) = camera.n;
-	p(2, 2) = camera.n + camera.f;
-	p(2, 3) = -camera.f * camera.n;
+	p(0, 0) = p(1, 1) = camera_.n;
+	p(2, 2) = camera_.n + camera_.f;
+	p(2, 3) = -camera_.f * camera_.n;
 	p(3, 2) = 1.0f;
 	return p;
 }
@@ -357,14 +357,14 @@ Eigen::Matrix4f CRenderer::P()
 Eigen::Matrix4f CRenderer::cameraTrans()
 {
 	Eigen::Matrix4f Mcam(Eigen::Matrix4f::Zero());
-	Mcam(0, 0) = camera.u(0); Mcam(0, 1) = camera.u(1); Mcam(0, 2) = camera.u(2);
-	Mcam(1, 0) = camera.v(0); Mcam(1, 1) = camera.v(1); Mcam(1, 2) = camera.v(2);
-	Mcam(2, 0) = camera.w(0); Mcam(2, 1) = camera.w(1); Mcam(2, 2) = camera.w(2);
+	Mcam(0, 0) = camera_.u(0); Mcam(0, 1) = camera_.u(1); Mcam(0, 2) = camera_.u(2);
+	Mcam(1, 0) = camera_.v(0); Mcam(1, 1) = camera_.v(1); Mcam(1, 2) = camera_.v(2);
+	Mcam(2, 0) = camera_.w(0); Mcam(2, 1) = camera_.w(1); Mcam(2, 2) = camera_.w(2);
 	Mcam(3, 3) = 1.0f;
 	Eigen::Matrix4f Mcam2(Eigen::Matrix4f::Identity());
-	Mcam2(0, 3) = -camera.e(0);
-	Mcam2(1, 3) = -camera.e(1);
-	Mcam2(2, 3) = -camera.e(2);
+	Mcam2(0, 3) = -camera_.e(0);
+	Mcam2(1, 3) = -camera_.e(1);
+	Mcam2(2, 3) = -camera_.e(2);
 	return Mcam * Mcam2;
 }
 
@@ -372,16 +372,16 @@ Eigen::Matrix4f CRenderer::cameraTrans()
 void CRenderer::clear() const
 {
 	Gdiplus::SolidBrush brush(Gdiplus::Color(0, 0, 0));
-	gr->FillRectangle(&brush, 0, 0, width, height);
+	gr_->FillRectangle(&brush, 0, 0, width_, height_);
 
-	for (int i = 0; i <= width; ++i)
-		for (int j = 0; j <= height; ++j)
-			z_buffer[i][j] = 10000.0f;
+	for (int i = 0; i <= width_; ++i)
+		for (int j = 0; j <= height_; ++j)
+			z_buffer_[i][j] = 10000.0f;
 }
 
 void CRenderer::draw() const
 {
-	graphics->DrawImage(buffer, 0, 0);
+	graphics_->DrawImage(buffer_, 0, 0);
 }
 
 CVertex CRenderer::trans(CVertex v)
@@ -413,5 +413,5 @@ CVertex CRenderer::trans(CVertex v)
 
 void CRenderer::setShader(IShader* shader)
 {
-	this->shader = shader;
+	shader_ = shader;
 }
