@@ -28,7 +28,7 @@ public:
 		for (int i = 0; i < 3; ++i)
 		{
 			intensity_[i] = input[i].vertex.n.normalized().dot(light_);
-			intensity_[i] = intensity_[i] > 1.0f ? 1.0f : intensity_[i] < 0.0f ? 0.0f : intensity_[i];
+			clip(intensity_[i], 0.0f, 1.0f);
 		}
 
 		return vertex_output_;
@@ -62,7 +62,8 @@ private:
 class CPhongShader : public IShader
 {
 public:
-	explicit CPhongShader(CRenderer* renderer_ptr) : renderer_(renderer_ptr) {}
+	explicit CPhongShader(CRenderer* renderer_ptr, bool blinn_phong)
+		: renderer_(renderer_ptr), blinn_phong_(blinn_phong) {}
 	std::vector<CVertex> vertex(CModel::TFace& input) override
 	{
 		vertex_output_.resize(0);
@@ -94,17 +95,24 @@ public:
 		// view
 		Eigen::Vector3f v = renderer_->getCameraPosition() - pos;
 		v.normalize();
-		// halfway vector
-		Eigen::Vector3f h = l + v;
-		h.normalize();
-		// r vector
-		Eigen::Vector3f rv = 2 * (l.dot(n)) * n - l;
 
 		// diffuse factor l dot n
 		float fd = l.dot(n);
 		fd = fd < 0.0f ? 0.0f : fd;
 		// specular factor r dot v / n dot h
-		float sd = /*n.dot(h);*/rv.dot(v);
+		float sd;
+		if (blinn_phong_)
+		{// halfway vector
+			Eigen::Vector3f h = l + v;
+			h.normalize();
+			sd = n.dot(h);
+		}
+		else
+		{
+			// r vector
+			Eigen::Vector3f rv = 2 * l.dot(n) * n - l;
+			sd = rv.dot(v);
+		}
 		sd = sd < 0.0f ? 0.0f : sd;
 
 		// Interpolate diffuse color
@@ -120,24 +128,33 @@ public:
 		float dR = R / 255.0f * fd * t_color.GetR() * material_.diffuse(0);
 		float dG = G / 255.0f * fd * t_color.GetG() * material_.diffuse(1);
 		float dB = B / 255.0f * fd * t_color.GetB() * material_.diffuse(2);
+		clip(dR, 0.0f, 255.0f);
+		clip(dG, 0.0f, 255.0f);
+		clip(dB, 0.0f, 255.0f);
 
 		// ambient (0 ~ 255)
 		float aR = material_.ambient(0) * ambient_.GetR();
 		float aG = material_.ambient(1) * ambient_.GetG();
 		float aB = material_.ambient(2) * ambient_.GetB();
+		clip(aR, 0.0f, 255.0f);
+		clip(aG, 0.0f, 255.0f);
+		clip(aB, 0.0f, 255.0f);
 
 		// specular (0 ~ 255)
 		float sR = material_.specular(0) * pow(sd, material_.shininess) * specular_.GetR();
 		float sG = material_.specular(1) * pow(sd, material_.shininess) * specular_.GetG();
 		float sB = material_.specular(2) * pow(sd, material_.shininess) * specular_.GetB();
+		clip(sR, 0.0f, 255.0f);
+		clip(sG, 0.0f, 255.0f);
+		clip(sB, 0.0f, 255.0f);
 
 		// all
 		int r = round(aR + dR + sR);
 		int g = round(aG + dG + sG);
 		int b = round(aB + dB + sB);
-		r = r > 255 ? 255 : r < 0 ? 0 : r;
-		g = g > 255 ? 255 : g < 0 ? 0 : g;
-		b = b > 255 ? 255 : b < 0 ? 0 : b;
+		clip(r, 0, 255);
+		clip(g, 0, 255);
+		clip(b, 0, 255);
 
 		const Gdiplus::Color pixel_color(r, g, b);
 		return pixel_color;
@@ -157,6 +174,7 @@ private:
 	Gdiplus::Color ambient_;
 	Gdiplus::Color diffuse_;
 	Gdiplus::Color specular_;
+	bool blinn_phong_;
 };
 
 CRenderer* p_renderer = nullptr;
@@ -256,7 +274,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	CRenderer renderer(hWnd);
 	p_renderer = &renderer;
 	//CGouraudShader shader(p_renderer);
-	CPhongShader shader(p_renderer);
+	CPhongShader shader(p_renderer, true);
 	shader.setLightProperties(/*Gdiplus::Color(63, 63, 63)*/);
 	p_shader = &shader;
 	renderer.setShader(&shader);
