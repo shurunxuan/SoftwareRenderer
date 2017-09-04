@@ -10,4 +10,4 @@ Currently, this renderer can draw textured 3D models (.obj and .mtl files) with 
 
 As the renderer seems working correctly, there's still many things to be done (like Blinn-Phong shading model and normal mapping), and many bugs to be fixed.
 
-![CurrentProgress](https://raw.githubusercontent.com/shurunxuan/SoftwareRenderer/master/SoftwareRenderer/progress.gif)
+![CurrentProgress](https://raw.githubusercontent.com/shurunxuan/SoftwareRenderer/master/SoftwareRenderer/progress.png)

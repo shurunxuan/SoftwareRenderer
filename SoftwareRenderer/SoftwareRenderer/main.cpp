@@ -197,8 +197,8 @@ VOID paint_main(CRenderer& renderer)
 	light.normalize();
 	//Eigen::Vector3f light = { 0, 0, 1 };
 	//renderer.cameraLookat(Eigen::Vector3f(0, p_v + 50, 400), Eigen::Vector3f(0, 0, -1), Eigen::Vector3f(0, 1, 0));
-	renderer.cameraLookat(Eigen::Vector3f(0, 100, 0) + 500.0f * light, -light, Eigen::Vector3f(0, 1, 0));
-	p_shader->setLight(light + Eigen::Vector3f(0, 20, 0));
+	renderer.cameraLookat(Eigen::Vector3f(0, 100, 0) + 400.0f * light, -light, Eigen::Vector3f(0, 1, 0));
+	p_shader->setLight(light + Eigen::Vector3f(0, 1, 0));
 	for (const CModel::TFace face : p_model->faces)
 	{
 		renderer.fillTriangle(face);
@@ -274,7 +274,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	CRenderer renderer(hWnd);
 	p_renderer = &renderer;
 	//CGouraudShader shader(p_renderer);
-	CPhongShader shader(p_renderer, true);
+	CPhongShader shader(p_renderer, false);
 	shader.setLightProperties(/*Gdiplus::Color(63, 63, 63)*/);
 	p_shader = &shader;
 	renderer.setShader(&shader);

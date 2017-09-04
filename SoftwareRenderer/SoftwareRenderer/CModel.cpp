@@ -91,7 +91,7 @@ CModel::CModel(std::string base_path, std::string obj_file, std::string mtl_file
 			}
 			else if (first_token == "Ns")
 			{
-				current_mtl->shininess = 20;
+				current_mtl->shininess = 200;
 				//str2num(s[1], current_mtl->shininess);
 			}
 			else if (first_token == "map_Kd")
