@@ -197,8 +197,11 @@ VOID paint_main(CRenderer& renderer)
 	light.normalize();
 	//Eigen::Vector3f light = { 0, 0, 1 };
 	//renderer.cameraLookat(Eigen::Vector3f(0, p_v + 50, 400), Eigen::Vector3f(0, 0, -1), Eigen::Vector3f(0, 1, 0));
-	renderer.cameraLookat(Eigen::Vector3f(0, 100, 0) + 400.0f * light, -light, Eigen::Vector3f(0, 1, 0));
-	p_shader->setLight(light + Eigen::Vector3f(0, 1, 0));
+	const auto position = Eigen::Vector3f(0, 150, 0) + 600.0f * light;
+	const auto direction = -light;
+	const Eigen::Vector3f up(0, 1, 0);
+	renderer.cameraLookat(position, direction, up);
+	p_shader->setLight(light/* + Eigen::Vector3f(0, 1, 0)*/);
 	for (const CModel::TFace face : p_model->faces)
 	{
 		renderer.fillTriangle(face);
@@ -229,7 +232,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// Initialize GDI+.
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
-	CModel model("Models\\003_01_0\\", "0.obj", "0.mtl");
+	CModel model("Models\\383_00_0\\", "0.obj", "0.mtl");
 	p_model = &model;
 
 	// clear out the window class for use
@@ -274,7 +277,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	CRenderer renderer(hWnd);
 	p_renderer = &renderer;
 	//CGouraudShader shader(p_renderer);
-	CPhongShader shader(p_renderer, false);
+	CPhongShader shader(p_renderer, true);
 	shader.setLightProperties(/*Gdiplus::Color(63, 63, 63)*/);
 	p_shader = &shader;
 	renderer.setShader(&shader);

@@ -258,12 +258,12 @@ void CRenderer::fillTriangle(CModel::TFace face)
 	if ((v1.v - v2.v).cross(v2.v - v3.v)(2) < 0) return;
 
 	// Just clip all the triangle if one vertex is outside the viewport
-	if (v1.v(0) > width_ || v1.v(0) < 0) return;
-	if (v2.v(0) > width_ || v2.v(0) < 0) return;
-	if (v3.v(0) > width_ || v3.v(0) < 0) return;
-	if (v1.v(1) > height_ || v1.v(1) < 0) return;
-	if (v2.v(1) > height_ || v2.v(1) < 0) return;
-	if (v3.v(1) > height_ || v3.v(1) < 0) return;
+	//if (v1.v(0) > width_ || v1.v(0) < 0) return;
+	//if (v2.v(0) > width_ || v2.v(0) < 0) return;
+	//if (v3.v(0) > width_ || v3.v(0) < 0) return;
+	//if (v1.v(1) > height_ || v1.v(1) < 0) return;
+	//if (v2.v(1) > height_ || v2.v(1) < 0) return;
+	//if (v3.v(1) > height_ || v3.v(1) < 0) return;
 	//const auto scale = 2.5f;
 	//CPixel p1(rint(v1.v(0) * scale) + 400, rint(v1.v(1) * scale) + 100, v1.c);
 	//CPixel p2(rint(v2.v(0) * scale) + 400, rint(v2.v(1) * scale) + 100, v2.c);
