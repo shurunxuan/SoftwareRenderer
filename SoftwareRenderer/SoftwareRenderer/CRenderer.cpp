@@ -195,7 +195,7 @@ void CRenderer::fillTriangle(CPixel p1, CPixel p2, CPixel p3) const
 		for (int y = minY; y <= maxY; ++y)
 		{
 			Eigen::Vector3f b = barycentric(p1, p2, p3, x, y);
-			if (b(0) < -0.001 || b(1) < -0.001 || b(2) < -0.001) continue;
+			if (b(0) < 0 || b(1) < 0 || b(2) < 0) continue;
 			int R = rint(p1.color().GetR() * b(0) + p2.color().GetR() * b(1) + p3.color().GetR() * b(2));
 			int G = rint(p1.color().GetG() * b(0) + p2.color().GetG() * b(1) + p3.color().GetG() * b(2));
 			int B = rint(p1.color().GetB() * b(0) + p2.color().GetB() * b(1) + p3.color().GetB() * b(2));
