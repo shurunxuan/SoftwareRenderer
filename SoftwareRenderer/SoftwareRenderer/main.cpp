@@ -101,11 +101,13 @@ public:
 		fd = fd < 0.0f ? 0.0f : fd;
 		// specular factor r dot v / n dot h
 		float sd;
+		float correction = 1.0f;
 		if (blinn_phong_)
 		{// halfway vector
 			Eigen::Vector3f h = l + v;
 			h.normalize();
 			sd = n.dot(h);
+			correction = 4.0f;
 		}
 		else
 		{
@@ -125,9 +127,9 @@ public:
 		Gdiplus::Color t_color = getColorFromBitmap(tex(0), tex(1), material_.texture);
 
 		// diffuse (0 ~ 255)
-		float dR = R / 255.0f * fd * t_color.GetR() * material_.diffuse(0);
-		float dG = G / 255.0f * fd * t_color.GetG() * material_.diffuse(1);
-		float dB = B / 255.0f * fd * t_color.GetB() * material_.diffuse(2);
+		float dR = R / 255.0f * fd * t_color.GetR() * material_.diffuse(0) * diffuse_.GetR() / 255.0f;
+		float dG = G / 255.0f * fd * t_color.GetG() * material_.diffuse(1) * diffuse_.GetG() / 255.0f;
+		float dB = B / 255.0f * fd * t_color.GetB() * material_.diffuse(2) * diffuse_.GetB() / 255.0f;
 		clip(dR, 0.0f, 255.0f);
 		clip(dG, 0.0f, 255.0f);
 		clip(dB, 0.0f, 255.0f);
@@ -141,9 +143,9 @@ public:
 		clip(aB, 0.0f, 255.0f);
 
 		// specular (0 ~ 255)
-		float sR = material_.specular(0) * pow(sd, material_.shininess) * specular_.GetR();
-		float sG = material_.specular(1) * pow(sd, material_.shininess) * specular_.GetG();
-		float sB = material_.specular(2) * pow(sd, material_.shininess) * specular_.GetB();
+		float sR = material_.specular(0) * pow(sd, material_.shininess * correction) * specular_.GetR();
+		float sG = material_.specular(1) * pow(sd, material_.shininess * correction) * specular_.GetG();
+		float sB = material_.specular(2) * pow(sd, material_.shininess * correction) * specular_.GetB();
 		clip(sR, 0.0f, 255.0f);
 		clip(sG, 0.0f, 255.0f);
 		clip(sB, 0.0f, 255.0f);
@@ -278,7 +280,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	p_renderer = &renderer;
 	//CGouraudShader shader(p_renderer);
 	CPhongShader shader(p_renderer, true);
-	shader.setLightProperties(/*Gdiplus::Color(63, 63, 63)*/);
+	shader.setLightProperties(Gdiplus::Color(0, 0, 0), Gdiplus::Color(255, 255, 255), Gdiplus::Color(255, 255, 255));
 	p_shader = &shader;
 	renderer.setShader(&shader);
 	renderer.setPerspectiveCamera(-1.f, -2.f, 3.14159f / 3.0f);
