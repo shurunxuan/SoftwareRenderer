@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <windows.h>
+#include <gdiplus.h>
 #include "CVertex.h"
 
 class CModel

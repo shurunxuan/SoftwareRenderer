@@ -1,5 +1,5 @@
 // include the basic windows header file
-#include <time.h>
+#include <ctime>
 #include <windows.h>
 #include <windowsx.h>
 #include <ShellScalingAPI.h>

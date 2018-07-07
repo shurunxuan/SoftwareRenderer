@@ -4,6 +4,7 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 #include "utils.h"
+#include <math.h>
 #pragma comment (lib,"Gdiplus.lib")
 
 #undef max

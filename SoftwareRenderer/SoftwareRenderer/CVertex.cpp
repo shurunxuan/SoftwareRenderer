@@ -1,3 +1,5 @@
+#include <windows.h>
+#include <gdiplus.h>
 #include "CVertex.h"
 #pragma comment (lib, "Gdiplus.lib")
 CVertex::CVertex(Eigen::Vector3f position, Eigen::Vector3f normal, Eigen::Vector2f texture, Gdiplus::Color color)
